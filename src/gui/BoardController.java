@@ -20,6 +20,7 @@ import piece.Piece;
 import piece.Position;
 import piece.Type;
 import pieces.Pawn;
+import util.Sounds;
 
 public class BoardController implements Initializable {
 	
@@ -103,6 +104,9 @@ public class BoardController implements Initializable {
 		return rectangle;
 	}
 	
+	private void playWav(String wav)
+		{ Sounds.playWav("./src/sounds/" + wav + ".wav"); }
+	
 	private void drawTile(int index) {
 		int width = getBoardWidth();
 		int height = getBoardHeight();
@@ -133,13 +137,20 @@ public class BoardController implements Initializable {
     pane.setOnMouseClicked(e -> {
     	msg("");
     	try {
-	    	if (board.pieceIsSelected())
+	    	if (board.pieceIsSelected()) {
+	    		playWav(board.getSelectedPiece().getPosition().equals(pos) ? "unselect" :
+	    			board.getPieceAtPosition(pos) != null ? "capture" : "move");
 	    		board.movePieceTo(pos);
-	    	else
+	    	}
+	    	else {
 	    		board.selectPiece(pos);
+	    		playWav("select");
+	    	}
     	}
-  		catch (Exception ex)
-  			{ errorMsg(ex.getMessage()); }
+  		catch (Exception ex) {
+    		playWav("error");
+  			errorMsg(ex.getMessage());
+  		}
   	  updateBoard();
     });
 	}	
