@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import board.Board;
+import gui.BoardController;
 import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
@@ -61,7 +62,9 @@ public class Program extends Application {
 			stage.setScene(mainScene);
 			stage.setResizable(false);
 			stage.setTitle("Xadrez");
+			BoardController controller = loader.getController();
 			stage.show();
+			controller.init();
 		}
 		catch (Exception e) {
 			e.printStackTrace();
