@@ -77,11 +77,11 @@ public class Board {
 
 	public void promotePiece(Type newType) throws BoardException {
 		if (!pieceWasPromoted())
-			throw new BoardException("There is no promoted piece");
+			throw new PromotionException("There is no promoted piece");
 		if (newType == Type.PAWN)
-			throw new BoardException("You can't promote a Pawn to a Pawn");
+			throw new PromotionException("You can't promote a Pawn to a Pawn");
 		if (newType == Type.KING)
-			throw new BoardException("You can't promote a Pawn to a King");
+			throw new PromotionException("You can't promote a Pawn to a King");
 		removePiece(getPromotedPiece().getPosition());
 		addNewPiece(getPromotedPiece().getPosition(), newType, getPromotedPiece().getColor());
 		promotedPiece = null;
@@ -110,15 +110,15 @@ public class Board {
 	
 	public Boolean pieceIsSelected() { return getSelectedPiece() != null; }
 
-	public Piece selectPiece(Position position) {
+	public Piece selectPiece(Position position) throws PieceSelectionException {
 		if (!isValidBoardPosition(position))
-			throw new BoardException("Invalid position");
+			throw new PieceSelectionException("Invalid position");
 		if (getPieceAtPosition(position) == null)
-			throw new BoardException("There is no piece on that position");
+			throw new PieceSelectionException("There is no piece on that position");
 		if (getPieceAtPosition(position).getColor() != getCurrentColorTurn())
-			throw new BoardException("This piece is not yours");
+			throw new PieceSelectionException("This piece is not yours");
 		if (getPieceAtPosition(position).isStucked())
-			throw new BoardException("This piece is stucked");
+			throw new PieceSelectionException("This piece is stucked");
 		return (selectedPiece = getPieceAtPosition(position));
 	}
 	
@@ -163,7 +163,10 @@ public class Board {
 		}
 	}
 	
-	private Piece movePieceTo(Position sourcePos, Position targetPos, Boolean testingCheckMate) throws BoardException {
+	public void cancelSelection()
+		{ selectedPiece = null; }
+	
+	private Piece movePieceTo(Position sourcePos, Position targetPos, Boolean testingCheckMate) throws InvalidMoveException {
 		if (selectedPiece != null && targetPos.equals(selectedPiece.getPosition())) {
 			selectedPiece = null;
 			return null;
@@ -174,11 +177,11 @@ public class Board {
 
 		if (!testingCheckMate) {
 			if (!isValidBoardPosition(sourcePos))
-				throw new BoardException("Invalid source position");
+				throw new InvalidMoveException("Invalid source position");
 			if (!isValidBoardPosition(targetPos))
-				throw new BoardException("Invalid target position");
+				throw new InvalidMoveException("Invalid target position");
 			if (!sourcePiece.canMoveToPosition(targetPos))
-				throw new BoardException("Invalid move for this piece");
+				throw new InvalidMoveException("Invalid move for this piece");
 		}
 
 		int dis;
@@ -187,7 +190,7 @@ public class Board {
 		promotedPiece = null;
 		removePiece(sourcePos);
 		
-		if (sourcePiece.getType() == Type.PAWN) {
+		if (sourcePiece instanceof Pawn) {
 			// En Passant special move
 			dis = sourcePos.getRow() - targetPos.getRow();
 			if (Math.abs(dis) == 2) enPassantPiece = sourcePiece;
@@ -206,7 +209,7 @@ public class Board {
 		}
 
 		// Castling special move
-		if (sourcePiece.getType() == Type.KING && !currentColorIsInCheck() && !sourcePiece.wasMoved()) {
+		if (sourcePiece instanceof King && !currentColorIsInCheck() && !sourcePiece.wasMoved()) {
 			dis = targetPos.getColumn() - sourcePos.getColumn();
 			if (Math.abs(dis) == 2) {
 				Position rookSourcePos = new Position(sourcePos.getRow(), dis == -2 ? 0 : 7);
@@ -224,7 +227,7 @@ public class Board {
 		if (!testingCheckMate) {
 			if (currentColorIsInCheck()) {
 				undoMove();
-				throw new BoardException("You can't put yourself in check");
+				throw new InvalidMoveException("You can't put yourself in check");
 			}
 			if (targetPiece != null) {
 				removePiece(targetPiece.getPosition());
@@ -246,7 +249,7 @@ public class Board {
 		List<Piece> pieceList1 = getPieceList(getCurrentColorTurn());
 		List<Piece> pieceList2 = getPieceList(oppositeColor());
 		for (Piece p : pieceList1)
-			if (p.getType() == Type.KING) {
+			if (p instanceof King) {
 				for (Piece p2 : pieceList2)
 					if (p2.canMoveToPosition(p.getPosition())) return true;
 				break;
@@ -258,7 +261,7 @@ public class Board {
 		if (currentColorIsInCheck()) {
 			List<Piece> pieceList = getPieceList(getCurrentColorTurn());
 			for (Piece p : pieceList)
-				if (p.getType() == Type.KING) {
+				if (p instanceof King) {
 					for (Piece p2 : pieceList) {
 						for (Position pos : p2.possibleMoves()) {
 							movePieceTo(p2.getPosition(), pos, true);

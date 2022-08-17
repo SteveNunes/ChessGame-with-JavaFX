@@ -19,10 +19,6 @@ public class Program extends Application {
 	private static Scene mainScene;
 	private static Stage mainStage;
 	private static List<Stage> stageList = new ArrayList<>();
-	private static Board board;
-	
-	public static Board getBoard()
-		{ return board; }
 	
 	public static Class<? extends Program> getMainClass()
 		{ return mainClass; }
@@ -53,8 +49,6 @@ public class Program extends Application {
 	public void start(Stage stage) {
 		mainClass = getClass();
 		stageList.add(mainStage = stage);
-		board = new Board();
-		board.reset();
 		try {
 			FXMLLoader loader = new FXMLLoader(getClass().getResource("/gui/BoardView.fxml"));
 			VBox vBox = loader.load();

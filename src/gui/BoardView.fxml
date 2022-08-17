@@ -1,14 +1,17 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
+<?import javafx.scene.image.ImageView?>
 <?import javafx.scene.layout.ColumnConstraints?>
 <?import javafx.scene.layout.GridPane?>
 <?import javafx.scene.layout.Pane?>
 <?import javafx.scene.layout.RowConstraints?>
 <?import javafx.scene.layout.VBox?>
+<?import javafx.scene.text.Font?>
+<?import javafx.scene.text.Text?>
 
-<VBox prefHeight="600.0" prefWidth="900.0" xmlns="http://javafx.com/javafx/18" xmlns:fx="http://javafx.com/fxml/1" fx:controller="gui.BoardController">
+<VBox xmlns="http://javafx.com/javafx/18" xmlns:fx="http://javafx.com/fxml/1" fx:controller="gui.BoardController">
    <children>
-      <Pane prefHeight="200.0" prefWidth="200.0" VBox.vgrow="ALWAYS">
+      <Pane VBox.vgrow="ALWAYS">
          <children>
             <GridPane fx:id="gridPaneBoard" layoutX="14.0" layoutY="14.0" prefHeight="512.0" prefWidth="512.0">
               <columnConstraints>
@@ -32,6 +35,21 @@
                   <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
               </rowConstraints>
             </GridPane>
+            <Text fx:id="textErrorMessage" layoutX="14.0" layoutY="581.0" strokeType="OUTSIDE" strokeWidth="0.0">
+               <font>
+                  <Font name="Lucida Console" size="20.0" />
+               </font>
+            </Text>
+            <VBox layoutX="526.0" layoutY="14.0" prefWidth="64.0" spacing="5.0">
+               <children>
+                  <Text fx:id="textErrorMessage1" strokeType="OUTSIDE" strokeWidth="0.0" text="Turn">
+                     <font>
+                        <Font name="Lucida Console" size="20.0" />
+                     </font>
+                  </Text>
+                  <ImageView fx:id="imageViewTurn" fitHeight="64.0" fitWidth="64.0" pickOnBounds="true" preserveRatio="true" />
+               </children>
+            </VBox>
          </children>
       </Pane>
    </children>
