@@ -3,7 +3,6 @@ package application;
 import java.util.ArrayList;
 import java.util.List;
 
-import board.Board;
 import gui.BoardController;
 import javafx.application.Application;
 import javafx.fxml.FXMLLoader;

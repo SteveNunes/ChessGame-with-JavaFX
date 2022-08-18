@@ -6,16 +6,24 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import piece.*;
-import pieces.*;
+import piece.Piece;
+import piece.PieceColor;
+import piece.PieceType;
+import piece.Position;
+import pieces.Bishop;
+import pieces.King;
+import pieces.Knight;
+import pieces.Pawn;
+import pieces.Queen;
+import pieces.Rook;
 
 public class Board {
 	
-	private Color currentColorTurn;
+	private PieceColor currentColorTurn;
 	private int turns;
 	private Piece[][] board, undoBoard;
 	private List<Piece> capturedPieces;
-	private Piece selectedPiece, undoPiece, promotedPiece, enPassantPiece;
+	private Piece selectedPiece, undoPiece;
 	private Boolean canUndo;
 	
 	public Board() { 
@@ -25,7 +33,7 @@ public class Board {
 		reset(); 
 	}
 	
-	public Board(Color startTurn) {
+	public Board(PieceColor startTurn) {
 		this();
 		currentColorTurn = startTurn;		
 	}
@@ -33,15 +41,15 @@ public class Board {
 	public void reset() {
 		turns = 0;
 		canUndo = false;
-		promotedPiece = selectedPiece = promotedPiece = enPassantPiece = null;
-		currentColorTurn = new SecureRandom().nextInt(1) == 0 ? Color.BLACK : Color.WHITE;
+		selectedPiece = null;
+		currentColorTurn = new SecureRandom().nextInt(1) == 0 ? PieceColor.BLACK : PieceColor.WHITE;
 		capturedPieces.clear();
 		resetBoard(board);
 		resetBoard(undoBoard);
 		setPiecesOnTheBoard();
 	}
 	
-	public List<Piece> getPieceList(Color color) {
+	public List<Piece> getPieceList(PieceColor color) {
 		List<Piece> pieceList = new ArrayList<>();
 		for (Piece[]vec : board)
 			for (Piece p : vec)
@@ -50,10 +58,13 @@ public class Board {
 		return pieceList;
 	}
 	
-	public List<Piece> getPieceList() { return getPieceList(null); }
+	public List<Piece> getPieceList()
+		{ return getPieceList(null); }
 	
-	public static void resetBoard(Piece[][] board) 
-		{ for (Piece[]b : board) Arrays.fill(b, null); }
+	public static void resetBoard(Piece[][] board) { 
+		for (Piece[]b : board)
+			Arrays.fill(b, null);
+	}
 
 	public static void copyBoard(Piece[][] sourceBoard, Piece[][] targetBoard) {
 		for (int y = 0; y < 8; y++)
@@ -61,30 +72,97 @@ public class Board {
 				targetBoard[y][x] = sourceBoard[y][x]; 
 	}
 	
-	public int getTurns() { return turns; }
+	public int getTurns()
+		{ return turns; }
 	
-	public Color getWinnerColor() { return checkMate() ? oppositeColor() : null; }
+	public PieceColor getWinnerColor()
+		{ return checkMate() ? oppositeColor() : null; }
 	
-	public Color getCurrentColorTurn() { return currentColorTurn; }
+	public PieceColor getCurrentColorTurn()
+		{ return currentColorTurn; }
 	
-	public Piece getPromotedPiece() { return promotedPiece; }
+	public Piece getPromotedPiece() {
+		for (int x = 0; x < 8; x++) {
+			Piece piece = board[currentColorTurn == PieceColor.BLACK ? 0 : 7][x];
+			if (piece != null && piece.getType() == PieceType.PAWN)
+				return piece;
+		}
+		return null;
+	}
 	
-	public Boolean pieceWasPromoted() { return getPromotedPiece() != null; }
+	public Boolean pieceWasPromoted() {
+		{ return getPromotedPiece() != null; }
+	}
 	
-	public Piece getEnPassantPiece() { return enPassantPiece; }
-
-	public Boolean checkEnPassant() { return enPassantPiece != null; }
-
-	public void promotePiece(Type newType) throws BoardException {
+	public void promotePiece(PieceType newType) throws BoardException {
 		if (!pieceWasPromoted())
 			throw new PromotionException("There is no promoted piece");
-		if (newType == Type.PAWN)
+		if (newType == PieceType.PAWN)
 			throw new PromotionException("You can't promote a Pawn to a Pawn");
-		if (newType == Type.KING)
+		if (newType == PieceType.KING)
 			throw new PromotionException("You can't promote a Pawn to a King");
+		Position pos = new Position(getPromotedPiece().getPosition());
+		PieceColor color = getPromotedPiece().getColor();
 		removePiece(getPromotedPiece().getPosition());
-		addNewPiece(getPromotedPiece().getPosition(), newType, getPromotedPiece().getColor());
-		promotedPiece = null;
+		addNewPiece(pos, newType, color);
+		changeTurn();
+	}
+	
+	public Piece getEnPassantPiece() {
+		if (selectedPiece == null ||
+				selectedPiece.getType() != PieceType.PAWN ||
+				selectedPiece.getRow() != (selectedPiece.getColor() == PieceColor.WHITE ? 4 : 3))
+					return null;
+
+		for (int x = -1; x <= 1; x += 2) {
+			Position pos = new Position(selectedPiece.getPosition().getRow(), selectedPiece.getPosition().getColumn() + x);
+			Position targetPos = new Position(pos);
+			targetPos.incValues(selectedPiece.getColor() == PieceColor.WHITE ? 1 : -1, 0);
+			Piece piece = getPieceAtPosition(pos);
+			if (piece != null && piece.getType() == PieceType.PAWN &&
+					piece.getColor() != selectedPiece.getColor() &&
+					piece.getMovedTurns() == 1 && !thereHavePiece(targetPos))
+						return piece;
+		}
+		return null;
+	}
+	
+	public Position getEnPassantCapturePosition() {
+		if (!checkEnPassant())
+			return null;
+		Piece piece = getEnPassantPiece();
+		Position position = new Position(piece.getPosition());
+		position.incValues(piece.getColor() == PieceColor.WHITE ? -1 : -1, 0);
+		return position;
+	}
+
+	public Boolean checkEnPassant()
+		{ return getEnPassantPiece() != null; }
+
+	public Boolean checkIfCastlingIsPossible(Position kingPosition, Position rookPosition) {
+		kingPosition = new Position(kingPosition);
+		rookPosition = new Position(rookPosition);
+		Piece king = getPieceAtPosition(kingPosition);
+		Piece rook = getPieceAtPosition(rookPosition);
+		Boolean toLeft = kingPosition.getColumn() > rookPosition.getColumn();
+		
+		if (king == null || rook == null || king.getColor() != rook.getColor() ||
+				king.getType() != PieceType.KING || rook.getType() != PieceType.ROOK ||
+				king.wasMoved() || rook.wasMoved() || currentColorIsInCheck())
+					return false;
+
+		while (!kingPosition.equals(rookPosition)) {
+			kingPosition.incColumn(toLeft ? -1 : 1);
+			if (!thereHavePiece(kingPosition)) {
+				addNewPiece(kingPosition, king);
+				if (currentColorIsInCheck()) {
+					removePiece(kingPosition);
+					return false;
+				}
+				removePiece(kingPosition);
+			}
+		}
+		return kingPosition.equals(rookPosition);
 	}
 
 	public Boolean isValidBoardPosition(Position position) {
@@ -96,19 +174,22 @@ public class Board {
 		{ return getPieceAtPosition(position) != null; }
 	
 	public Piece getPieceAtPosition(Position position) {
-		if (!isValidBoardPosition(position)) return null;
+		if (!isValidBoardPosition(position))
+			return null;
 		return board[position.getRow()][position.getColumn()];
 	}
 	
-	public Boolean isOpponentPiece(Position position, Color color) 
+	public Boolean isOpponentPiece(Position position, PieceColor color) 
 		{ return thereHavePiece(position) && getPieceAtPosition(position).getColor() != color; }
 	
 	public Boolean isOpponentPiece(Position position)
 		{ return isOpponentPiece(position, getCurrentColorTurn()); }
 
-	public Piece getSelectedPiece() { return selectedPiece; }
+	public Piece getSelectedPiece()
+		{ return selectedPiece; }
 	
-	public Boolean pieceIsSelected() { return getSelectedPiece() != null; }
+	public Boolean pieceIsSelected()
+		{ return getSelectedPiece() != null; }
 
 	public Piece selectPiece(Position position) throws PieceSelectionException {
 		if (!isValidBoardPosition(position))
@@ -122,16 +203,20 @@ public class Board {
 		return (selectedPiece = getPieceAtPosition(position));
 	}
 	
-	public Color oppositeColor() 
-		{ return getCurrentColorTurn() == Color.BLACK ? Color.WHITE : Color.BLACK; }
+	public PieceColor oppositeColor() 
+		{ return getCurrentColorTurn() == PieceColor.BLACK ? PieceColor.WHITE : PieceColor.BLACK; }
 	
-	public void addCapturedPiece(Piece piece)
-		{ if (piece != null) capturedPieces.add(piece); }
+	public void addCapturedPiece(Piece piece) {
+		if (piece != null)
+			capturedPieces.add(piece);
+	}
 
-	public void removeCapturedPiece(Piece piece)
-		{ if (piece != null) capturedPieces.remove(piece); }
+	public void removeCapturedPiece(Piece piece) {
+		if (piece != null) 
+			capturedPieces.remove(piece);
+	}
 	
-	public List<Piece> getCapturedPieces(Color color) {
+	public List<Piece> getCapturedPieces(PieceColor color) {
 		return capturedPieces.stream()
 				.filter(c -> c.getColor() == color)
 				.collect(Collectors.toList());
@@ -163,11 +248,17 @@ public class Board {
 		}
 	}
 	
-	public void cancelSelection()
-		{ selectedPiece = null; }
+	public void cancelSelection() {
+		if (pieceWasPromoted())
+			throw new InvalidMoveException("You must promote your pawn");
+		selectedPiece = null;
+	}
 	
 	private Piece movePieceTo(Position sourcePos, Position targetPos, Boolean testingCheckMate) throws InvalidMoveException {
-		if (selectedPiece != null && targetPos.equals(selectedPiece.getPosition())) {
+		if (!testingCheckMate && pieceWasPromoted())
+			throw new InvalidMoveException("You must promote the pawn");
+
+			if (selectedPiece != null && targetPos.equals(selectedPiece.getPosition())) {
 			selectedPiece = null;
 			return null;
 		}
@@ -184,62 +275,64 @@ public class Board {
 				throw new InvalidMoveException("Invalid move for this piece");
 		}
 
-		int dis;
 		canUndo = true;
 		copyBoard(board, undoBoard);
-		promotedPiece = null;
-		removePiece(sourcePos);
-		
-		if (sourcePiece instanceof Pawn) {
-			// En Passant special move
-			dis = sourcePos.getRow() - targetPos.getRow();
-			if (Math.abs(dis) == 2) enPassantPiece = sourcePiece;
-			else if (checkEnPassant()) {
-				if (targetPos.getColumn() == enPassantPiece.getColumn()) {
-					Position pos = new Position(targetPos);
-					pos.incValues(sourcePiece.getColor() == Color.BLACK ? 1 : -1, 0);
-					if (enPassantPiece.getPosition().equals(pos))
-						targetPiece = enPassantPiece;
-				}
-				enPassantPiece = null;
-			}
-			// Promotion special move
-			if (targetPos.getRow() == (getCurrentColorTurn() == Color.BLACK ? 0 : 7)) 
-				promotedPiece = sourcePiece;
-		}
 
 		// Castling special move
-		if (sourcePiece instanceof King && !currentColorIsInCheck() && !sourcePiece.wasMoved()) {
-			dis = targetPos.getColumn() - sourcePos.getColumn();
-			if (Math.abs(dis) == 2) {
-				Position rookSourcePos = new Position(sourcePos.getRow(), dis == -2 ? 0 : 7);
-				Position rookTargetPos = new Position(sourcePos);
-				rookTargetPos.incValues(0, dis == -2 ? -1 : 1);
-				Piece rookPiece = getPieceAtPosition(rookSourcePos); 
-				addPiece(rookTargetPos, rookPiece);
-				removePiece(rookSourcePos);
-				rookPiece.incMovedTurns();
-			}
+		Position rookPosition = new Position(sourcePos);
+		Boolean rookAtLeft = targetPos.getColumn() < sourcePos.getColumn();
+		rookPosition.setColumn(rookAtLeft ? 0 : 7);
+		if (checkIfCastlingIsPossible(sourcePos, rookPosition)) {
+			Rook rook = (Rook) getPieceAtPosition(rookPosition);
+			removePiece(rookPosition);
+			rookPosition = new Position(targetPos);
+			rookPosition.incColumn(rookAtLeft ? 1 : -1);
+			addNewPiece(rookPosition, rook);
 		}
+
+		removePiece(sourcePos);
 		
+		// EnPassant move
+		if (sourcePiece.getType() == PieceType.PAWN &&
+				checkEnPassant() && getEnPassantCapturePosition().equals(targetPos))
+					targetPiece = getEnPassantPiece();
+
 		undoPiece = targetPiece;
 
 		if (!testingCheckMate) {
+
 			if (currentColorIsInCheck()) {
 				undoMove();
-				throw new InvalidMoveException("You can't put yourself in check");
+				throw new InvalidMoveException("You are in check");
 			}
+
 			if (targetPiece != null) {
 				removePiece(targetPiece.getPosition());
 				addCapturedPiece(targetPiece);
 			}
+
 			addPiece(targetPos, sourcePiece);
-			selectedPiece = null;
-			turns++;
-			currentColorTurn = oppositeColor();
 			sourcePiece.incMovedTurns();
+
+			if (!pieceWasPromoted())
+				changeTurn();
+			
+			// Incrementa o número de turnos dos peões adversários que tiverem movido apenas 1 casa, cancelando assim o status de EnPassant dos que estavam nesse statos mas não foram capturados de imediato.
+			for (int y = 0; y < 8; y++)
+				for (int x = 0; x < 8; x++)
+					if (board[y][x] != null &&
+							board[y][x].getColor() == currentColorTurn &&
+							board[y][x].getType() == PieceType.PAWN &&
+							board[y][x].getMovedTurns() == 1)
+								board[y][x].incMovedTurns();
 		}
 		return targetPiece;
+	}
+
+	private void changeTurn() {
+		selectedPiece = null;
+		turns++;
+		currentColorTurn = oppositeColor();
 	}
 
 	public Piece movePieceTo(Position targetPos) throws BoardException 
@@ -249,9 +342,10 @@ public class Board {
 		List<Piece> pieceList1 = getPieceList(getCurrentColorTurn());
 		List<Piece> pieceList2 = getPieceList(oppositeColor());
 		for (Piece p : pieceList1)
-			if (p instanceof King) {
+			if (p.getType() == PieceType.KING) {
 				for (Piece p2 : pieceList2)
-					if (p2.canMoveToPosition(p.getPosition())) return true;
+					if (p2.canMoveToPosition(p.getPosition()))
+						return true;
 				break;
 			}
 		return false;
@@ -261,7 +355,7 @@ public class Board {
 		if (currentColorIsInCheck()) {
 			List<Piece> pieceList = getPieceList(getCurrentColorTurn());
 			for (Piece p : pieceList)
-				if (p instanceof King) {
+				if (p.getType() == PieceType.KING) {
 					for (Piece p2 : pieceList) {
 						for (Position pos : p2.possibleMoves()) {
 							movePieceTo(p2.getPosition(), pos, true);
@@ -279,62 +373,84 @@ public class Board {
 		return false;
 	}
 
-	public void addNewPiece(Position position, Type type, Color color) throws BoardException {
+	public void addNewPiece(Position position, PieceType type, PieceColor color) throws BoardException {
 		if (!isValidBoardPosition(position))
 			throw new BoardException("Invalid position");
 		if (thereHavePiece(position))
 			throw new BoardException("This board position is occupied already");
 		Piece piece;
-		if (type == Type.KING) piece = new King(this, position, color);
-		else if (type == Type.QUEEN) piece = new Queen(this, position, color);
-		else if (type == Type.ROOK) piece = new Rook(this, position, color);
-		else if (type == Type.BISHOP) piece = new Bishop(this, position, color);
-		else if (type == Type.KNIGHT) piece = new Knight(this, position, color);
-		else piece = new Pawn(this, position, color);
+		if (type == PieceType.KING)
+			piece = new King(this, position, color);
+		else if (type == PieceType.QUEEN) 
+			piece = new Queen(this, position, color);
+		else if (type == PieceType.ROOK) 
+			piece = new Rook(this, position, color);
+		else if (type == PieceType.BISHOP) 
+			piece = new Bishop(this, position, color);
+		else if (type == PieceType.KNIGHT) 
+			piece = new Knight(this, position, color);
+		else 
+			piece = new Pawn(this, position, color);
 		board[position.getRow()][position.getColumn()] = piece;
 	}
 
-	public void addNewPiece(int row, int column, Type type, Color color) throws BoardException
+	public void addNewPiece(int row, int column, PieceType type, PieceColor color) throws BoardException
 		{ addNewPiece(new Position(row, column), type, color); }
 
-	public void addNewPiece(String position, Type type, Color color) throws BoardException
+	public void addNewPiece(String position, PieceType type, PieceColor color) throws BoardException
 		{ addNewPiece(Position.stringToPosition(position), type, color); }
+	
+	public void addNewPiece(Position position, Piece piece)
+		{ addNewPiece(position, piece.getType(), piece.getColor()); }
+	
+	public void setPiecesOnTheBoardORIGINAL() throws BoardException {
+		// White Pieces
+		addNewPiece("a7", PieceType.PAWN, PieceColor.WHITE);
+		addNewPiece("b7", PieceType.PAWN, PieceColor.WHITE);
+		addNewPiece("c7", PieceType.PAWN, PieceColor.WHITE);
+		addNewPiece("d7", PieceType.PAWN, PieceColor.WHITE);
+		addNewPiece("e7", PieceType.PAWN, PieceColor.WHITE);
+		addNewPiece("f7", PieceType.PAWN, PieceColor.WHITE);
+		addNewPiece("g7", PieceType.PAWN, PieceColor.WHITE);
+		addNewPiece("h7", PieceType.PAWN, PieceColor.WHITE);
+		addNewPiece("a8", PieceType.ROOK, PieceColor.WHITE);
+		addNewPiece("b8", PieceType.KNIGHT, PieceColor.WHITE);
+		addNewPiece("c8", PieceType.BISHOP, PieceColor.WHITE);
+		addNewPiece("d8", PieceType.QUEEN, PieceColor.WHITE);
+		addNewPiece("e8", PieceType.KING, PieceColor.WHITE);
+		addNewPiece("f8", PieceType.BISHOP, PieceColor.WHITE);
+		addNewPiece("g8", PieceType.KNIGHT, PieceColor.WHITE);
+		addNewPiece("h8", PieceType.ROOK, PieceColor.WHITE);
+		// Black Pieces
+		addNewPiece("a2", PieceType.PAWN, PieceColor.BLACK);
+		addNewPiece("b2", PieceType.PAWN, PieceColor.BLACK);
+		addNewPiece("c2", PieceType.PAWN, PieceColor.BLACK);
+		addNewPiece("d2", PieceType.PAWN, PieceColor.BLACK);
+		addNewPiece("e2", PieceType.PAWN, PieceColor.BLACK);
+		addNewPiece("f2", PieceType.PAWN, PieceColor.BLACK);
+		addNewPiece("g2", PieceType.PAWN, PieceColor.BLACK);
+		addNewPiece("h2", PieceType.PAWN, PieceColor.BLACK);
+		addNewPiece("a1", PieceType.ROOK, PieceColor.BLACK);
+		addNewPiece("b1", PieceType.KNIGHT, PieceColor.BLACK);
+		addNewPiece("c1", PieceType.BISHOP, PieceColor.BLACK);
+		addNewPiece("d1", PieceType.QUEEN, PieceColor.BLACK);
+		addNewPiece("e1", PieceType.KING, PieceColor.BLACK);
+		addNewPiece("f1", PieceType.BISHOP, PieceColor.BLACK);
+		addNewPiece("g1", PieceType.KNIGHT, PieceColor.BLACK);
+		addNewPiece("h1", PieceType.ROOK, PieceColor.BLACK);
+	}
 	
 	public void setPiecesOnTheBoard() throws BoardException {
 		// White Pieces
-		addNewPiece("a7", Type.PAWN, Color.WHITE);
-		addNewPiece("b7", Type.PAWN, Color.WHITE);
-		addNewPiece("c7", Type.PAWN, Color.WHITE);
-		addNewPiece("d7", Type.PAWN, Color.WHITE);
-		addNewPiece("e7", Type.PAWN, Color.WHITE);
-		addNewPiece("f7", Type.PAWN, Color.WHITE);
-		addNewPiece("g7", Type.PAWN, Color.WHITE);
-		addNewPiece("h7", Type.PAWN, Color.WHITE);
-		addNewPiece("a8", Type.ROOK, Color.WHITE);
-		addNewPiece("b8", Type.KNIGHT, Color.WHITE);
-		addNewPiece("c8", Type.BISHOP, Color.WHITE);
-		addNewPiece("d8", Type.QUEEN, Color.WHITE);
-		addNewPiece("e8", Type.KING, Color.WHITE);
-		addNewPiece("f8", Type.BISHOP, Color.WHITE);
-		addNewPiece("g8", Type.KNIGHT, Color.WHITE);
-		addNewPiece("h8", Type.ROOK, Color.WHITE);
+		addNewPiece("d3", PieceType.ROOK, PieceColor.WHITE);
 		// Black Pieces
-		addNewPiece("a2", Type.PAWN, Color.BLACK);
-		addNewPiece("b2", Type.PAWN, Color.BLACK);
-		addNewPiece("c2", Type.PAWN, Color.BLACK);
-		addNewPiece("d2", Type.PAWN, Color.BLACK);
-		addNewPiece("e2", Type.PAWN, Color.BLACK);
-		addNewPiece("f2", Type.PAWN, Color.BLACK);
-		addNewPiece("g2", Type.PAWN, Color.BLACK);
-		addNewPiece("h2", Type.PAWN, Color.BLACK);
-		addNewPiece("a1", Type.ROOK, Color.BLACK);
-		addNewPiece("b1", Type.KNIGHT, Color.BLACK);
-		addNewPiece("c1", Type.BISHOP, Color.BLACK);
-		addNewPiece("d1", Type.QUEEN, Color.BLACK);
-		addNewPiece("e1", Type.KING, Color.BLACK);
-		addNewPiece("f1", Type.BISHOP, Color.BLACK);
-		addNewPiece("g1", Type.KNIGHT, Color.BLACK);
-		addNewPiece("h1", Type.ROOK, Color.BLACK);
+		addNewPiece("a7", PieceType.PAWN, PieceColor.BLACK);
+		addNewPiece("b7", PieceType.PAWN, PieceColor.BLACK);
+		addNewPiece("c7", PieceType.PAWN, PieceColor.BLACK);
+		addNewPiece("d7", PieceType.PAWN, PieceColor.BLACK);
+		addNewPiece("e7", PieceType.PAWN, PieceColor.BLACK);
+		addNewPiece("f7", PieceType.PAWN, PieceColor.BLACK);
+		addNewPiece("g7", PieceType.PAWN, PieceColor.BLACK);
+		addNewPiece("h7", PieceType.PAWN, PieceColor.BLACK);
 	}
-	
 }

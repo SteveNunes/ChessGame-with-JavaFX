@@ -4,12 +4,15 @@ import java.util.ArrayList;
 import java.util.List;
 
 import board.Board;
-import piece.*;
+import piece.Piece;
+import piece.PieceColor;
+import piece.PieceType;
+import piece.Position;
 
 public class King extends Piece  {
 
-	public King(Board board, Position position, Color color)
-		{ super(board, position, Type.KING, color); }
+	public King(Board board, Position position, PieceColor color)
+		{ super(board, position, PieceType.KING, color); }
 
 	@Override
 	public List<Position> possibleMoves() {
@@ -19,21 +22,15 @@ public class King extends Piece  {
 			{-1,-1,-1,0,0,1,1,1,0,0},
 			{-1,0,1,-1,1,-1,0,1,1,1}
 		};
+		
 		// Castling special move
-		for (int col = 0, i = 1; !wasMoved() && col <= 7; col += 7, i = -1) {
-			p.setValues(getRow(), col);
-			if (getBoard().thereHavePiece(p) &&
-				!getBoard().isOpponentPiece(p, getColor()) &&
-				getBoard().getPieceAtPosition(p) instanceof Rook) {
-					p.incValues(0, i);
-					while (!p.equals(getPosition())) {
-						if (getBoard().thereHavePiece(p)) break;
-						p.incValues(0, i);
-					}
-					if (p.equals(getPosition()))
-						inc[1][col == 0 ? 8 : 9] = col == 0 ? -2 : 2;
-			}
+		Position p2 = new Position(getPosition());
+		for (int c = 0; c <= 7; c += 7) {
+			p2.setColumn(c);
+			if (getBoard().getSelectedPiece() == this && getBoard().checkIfCastlingIsPossible(p, p2))
+				inc[1][c == 0 ? 8 : 9] = c == 0 ? -2 : 2;
 		}
+		
 		/* 10 directions check (9th and 10th is for castling special move
 		 * (these values will be changed if castling check pass, otherwise
 		 * they will be just repeated directions))
@@ -42,13 +39,14 @@ public class King extends Piece  {
 			p.setValues(getPosition());
 			p.incValues(inc[0][dir], inc[1][dir]);
 			if (getBoard().isValidBoardPosition(p) &&
-				(!getBoard().thereHavePiece(p) || getBoard().isOpponentPiece(p, getColor())))
-					moves.add(new Position(p));
+					(!getBoard().thereHavePiece(p) || getBoard().isOpponentPiece(p, getColor())))
+						moves.add(new Position(p));
 		}
 		return moves;
 	}
 
 	@Override
-	public String toString() { return "K"; }
+	public String toString()	
+		{ return "K"; }
 
 }

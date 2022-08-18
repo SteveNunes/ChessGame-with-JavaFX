@@ -8,8 +8,8 @@ import piece.*;
 
 public class Queen extends Piece  {
 
-	public Queen(Board board, Position position, Color color)
-		{ super(board, position, Type.QUEEN, color); }
+	public Queen(Board board, Position position, PieceColor color)
+		{ super(board, position, PieceType.QUEEN, color); }
 
 	@Override
 	public List<Position> possibleMoves() {
@@ -25,15 +25,18 @@ public class Queen extends Piece  {
 			while (getBoard().isValidBoardPosition(p)) {
 				p.incValues(inc[0][dir], inc[1][dir]);
 				if (!getBoard().isValidBoardPosition(p) ||
-					(getBoard().thereHavePiece(p) && !getBoard().isOpponentPiece(p, getColor()))) break; 
+					(getBoard().thereHavePiece(p) && !getBoard().isOpponentPiece(p, getColor())))
+					break; 
 				moves.add(new Position(p));
-				if (getBoard().isOpponentPiece(p, getColor())) break; 
+				if (getBoard().isOpponentPiece(p, getColor()))
+					break; 
 			}
 		}
 		return moves;
 	}
 
 	@Override
-	public String toString() { return "Q"; }
+	public String toString()
+		{ return "Q"; }
 
 }

@@ -8,20 +8,33 @@ public class Position {
 
 	private int row, column;
 	
-	public Position(int row, int column) { setValues(row, column); }
+	public Position(int row, int column)
+		{ setValues(row, column); }
 	
-	public Position(Position position) { setValues(position); }
+	public Position(Position position)
+		{ setValues(position); }
 	
-	public Position(String position) { setValues(position); }
+	public Position(String position)
+		{ setValues(position); }
 	
-	public int getRow() { return row; }
+	public int getRow()
+		{ return row; }
 	
-	public int getColumn() { return column; }
+	public int getColumn()
+		{ return column; }
 	
-	public void setRow(int row) { this.row = row; }
+	public void setRow(int row)
+		{ this.row = row; }
 	
-	public void setColumn(int column) { this.column = column; }
+	public void setColumn(int column)
+		{ this.column = column; }
 	
+	public void incRow(int value)
+		{ row += value; }
+	
+	public void incColumn(int value)
+		{ column += value; }
+
 	public void setValues(int row, int column) {
 		setRow(row);
 		setColumn(column);
@@ -34,12 +47,13 @@ public class Position {
 		{ setValues(stringToPosition(position)); }
 	
 	public void incValues(int incRow, int incColumn) {
-		setRow(getRow() + incRow);
-		setColumn(getColumn() + incColumn);
+		incRow(incRow);
+		incColumn(incColumn);
 	}
 	
 	@Override
-	public int hashCode() { return Objects.hash(column, row); }
+	public int hashCode()
+		{ return Objects.hash(column, row); }
 
 	@Override
 	public boolean equals(Object obj) {
@@ -59,6 +73,7 @@ public class Position {
 		return new Position(row, column);
 	}
 	@Override
-	public String toString() { return "[" + getRow() + ", " + getColumn() + "]"; }
+	public String toString()
+		{ return "[" + getRow() + ", " + getColumn() + "]"; }
 	
 }

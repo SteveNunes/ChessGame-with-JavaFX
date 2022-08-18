@@ -6,13 +6,13 @@ import board.Board;
 
 public abstract class Piece {
 	
-	private Type type;
+	private PieceType type;
 	private Board board;
-	private Color color;
+	private PieceColor color;
 	private Position position;
 	private int movedTurns;
 	
-	public Piece(Board board, Position position, Type type, Color color) {
+	public Piece(Board board, Position position, PieceType type, PieceColor color) {
 		this.board = board;
 		setPosition(position);
 		movedTurns = 0;
@@ -32,16 +32,16 @@ public abstract class Piece {
 	public void setPosition(Position position)
 		{ this.position = position; }
 	
-	public Color getColor()
+	public PieceColor getColor()
 		{ return color; }
 	
-	public void setColor(Color color)
+	public void setColor(PieceColor color)
 		{ this.color = color; }
 	
-	public Type getType()
+	public PieceType getType()
 		{ return type; }
 	
-	public void setType(Type type)
+	public void setType(PieceType type)
 		{ this.type = type; }
 	
 	public int getMovedTurns()

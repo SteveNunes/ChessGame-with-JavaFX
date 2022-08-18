@@ -3,7 +3,10 @@ package application;
 import java.util.Scanner;
 
 import board.Board;
-import piece.*;
+import piece.Piece;
+import piece.PieceColor;
+import piece.PieceType;
+import piece.Position;
 
 public class UI {
 
@@ -17,17 +20,17 @@ public class UI {
 		else if (board.pieceWasPromoted() && piece == board.getPromotedPiece())
 			str = AnsiColors.ANSI_PURPLE_BACKGROUND + AnsiColors.ANSI_WHITE + piece.toString();
 		else if (piece == board.getSelectedPiece())
-			str = (piece.getColor() == Color.BLACK ? AnsiColors.BLACK_PIECE_BACKGROUND : AnsiColors.WHITE_PIECE_BACKGROUND) + AnsiColors.ANSI_BLACK + piece.toString();
-		else str = (piece.getColor() == Color.BLACK ? AnsiColors.BLACK_PIECE : AnsiColors.WHITE_PIECE) + piece.toString();
+			str = (piece.getColor() == PieceColor.BLACK ? AnsiColors.BLACK_PIECE_BACKGROUND : AnsiColors.WHITE_PIECE_BACKGROUND) + AnsiColors.ANSI_BLACK + piece.toString();
+		else str = (piece.getColor() == PieceColor.BLACK ? AnsiColors.BLACK_PIECE : AnsiColors.WHITE_PIECE) + piece.toString();
 		return str + AnsiColors.ANSI_RESET;
 	}
 	
-	public String turnColor(Color color)
-		{ return (color == Color.BLACK ? AnsiColors.BLACK_PIECE : AnsiColors.WHITE_PIECE) + color + AnsiColors.ANSI_RESET; }
+	public String turnColor(PieceColor color)
+		{ return (color == PieceColor.BLACK ? AnsiColors.BLACK_PIECE : AnsiColors.WHITE_PIECE) + color + AnsiColors.ANSI_RESET; }
 	
 	public void drawInfos() {
-		System.out.println(turnColor(Color.WHITE) + " captured Pieces: " + AnsiColors.ANSI_PURPLE + board.getCapturedPieces(Color.WHITE) + AnsiColors.ANSI_RESET);
-		System.out.println(turnColor(Color.BLACK) + " captured Pieces: " + AnsiColors.ANSI_PURPLE + board.getCapturedPieces(Color.BLACK) + AnsiColors.ANSI_RESET);
+		System.out.println(turnColor(PieceColor.WHITE) + " captured Pieces: " + AnsiColors.ANSI_PURPLE + board.getCapturedPieces(PieceColor.WHITE) + AnsiColors.ANSI_RESET);
+		System.out.println(turnColor(PieceColor.BLACK) + " captured Pieces: " + AnsiColors.ANSI_PURPLE + board.getCapturedPieces(PieceColor.BLACK) + AnsiColors.ANSI_RESET);
 		System.out.println();
 		if (board.currentColorIsInCheck())
 			System.out.println(AnsiColors.ANSI_CYAN + "CHECK!" + AnsiColors.ANSI_RESET);
@@ -81,10 +84,10 @@ public class UI {
 							 AnsiColors.ANSI_GREEN);
 			try {
 				imput = sc.nextLine().toLowerCase();
-				if (imput.equals("q")) board.promotePiece(Type.QUEEN);
-				else if (imput.equals("b")) board.promotePiece(Type.BISHOP);
-				else if (imput.equals("n")) board.promotePiece(Type.KNIGHT);
-				else if (imput.equals("r")) board.promotePiece(Type.ROOK);
+				if (imput.equals("q")) board.promotePiece(PieceType.QUEEN);
+				else if (imput.equals("b")) board.promotePiece(PieceType.BISHOP);
+				else if (imput.equals("n")) board.promotePiece(PieceType.KNIGHT);
+				else if (imput.equals("r")) board.promotePiece(PieceType.ROOK);
 				else error = "Invalid promotion level";
 			}
 			catch (Exception e) { error = "Invalid promotion level"; }

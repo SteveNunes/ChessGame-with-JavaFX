@@ -8,8 +8,8 @@ import piece.*;
 
 public class Knight extends Piece  {
 
-	public Knight(Board board, Position position, Color color) 
-		{ super(board, position, Type.KNIGHT, color); }
+	public Knight(Board board, Position position, PieceColor color) 
+		{ super(board, position, PieceType.KNIGHT, color); }
 
 	@Override
 	public List<Position> possibleMoves() {
@@ -24,13 +24,14 @@ public class Knight extends Piece  {
 			p.setValues(getPosition());
 			p.incValues(inc[0][dir], inc[1][dir]);
 			if (getBoard().isValidBoardPosition(p) &&
-				(!getBoard().thereHavePiece(p) || getBoard().isOpponentPiece(p, getColor())))
-					moves.add(new Position(p));
+					(!getBoard().thereHavePiece(p) || getBoard().isOpponentPiece(p, getColor())))
+						moves.add(new Position(p));
 		}
 		return moves;
 	}
 
 	@Override
-	public String toString() { return "N"; }
+	public String toString()
+		{ return "N"; }
 
 }
