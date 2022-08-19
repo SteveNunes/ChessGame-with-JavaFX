@@ -191,7 +191,8 @@ public class Board {
 	}
 	
 	public Boolean isValidBoardPosition(Position position) {
-		validatePosition(position, "position");
+		if (position == null)
+			throw new GameException("position is null");
 		return position.getColumn() >= 0 && position.getColumn() < 8 &&
 			position.getRow() >= 0 && position.getRow() < 8;
 	}
