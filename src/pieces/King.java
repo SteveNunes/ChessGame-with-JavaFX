@@ -15,7 +15,7 @@ public class King extends Piece  {
 		{ super(board, position, PieceType.KING, color); }
 
 	@Override
-	public List<Position> possibleMoves() {
+	public List<Position> getPossibleMoves() {
 		List<Position> moves = new ArrayList<>();
 		Position p = new Position(getPosition());
 		int[][] inc = {
@@ -27,7 +27,8 @@ public class King extends Piece  {
 		Position p2 = new Position(getPosition());
 		for (int c = 0; c <= 7; c += 7) {
 			p2.setColumn(c);
-			if (getBoard().getSelectedPiece() == this && getBoard().checkIfCastlingIsPossible(p, p2))
+			Piece rook = getBoard().getPieceAt(p2);
+			if (rook != null && getBoard().getSelectedPiece() == this && getBoard().checkIfCastlingIsPossible(this, rook))
 				inc[1][c == 0 ? 8 : 9] = c == 0 ? -2 : 2;
 		}
 		
@@ -39,7 +40,7 @@ public class King extends Piece  {
 			p.setValues(getPosition());
 			p.incValues(inc[0][dir], inc[1][dir]);
 			if (getBoard().isValidBoardPosition(p) &&
-					(!getBoard().thereHavePiece(p) || getBoard().isOpponentPiece(p, getColor())))
+					(getBoard().isFreeSlot(p) || getBoard().isOpponentPiece(p, getColor())))
 						moves.add(new Position(p));
 		}
 		return moves;

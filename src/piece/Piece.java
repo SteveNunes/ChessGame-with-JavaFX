@@ -60,15 +60,11 @@ public abstract class Piece {
 		{ return board; }
 	
 	public Boolean isStucked()
-		{ return possibleMoves().size() == 0; }
+		{ return getPossibleMoves().size() == 0; }
 	
-	public Boolean canMoveToPosition(Position position) {
-	  for (Position p : possibleMoves())
-		  if (p.equals(position))
-		  	return true;
-	  return false;
-	}
+	public Boolean canMoveToPosition(Position position) 
+		{ return getPossibleMoves().contains(position); }
 	
-	public abstract List<Position> possibleMoves();
-	
+	public abstract List<Position> getPossibleMoves();
+
 }

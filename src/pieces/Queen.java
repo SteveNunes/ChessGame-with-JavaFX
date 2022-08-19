@@ -12,7 +12,7 @@ public class Queen extends Piece  {
 		{ super(board, position, PieceType.QUEEN, color); }
 
 	@Override
-	public List<Position> possibleMoves() {
+	public List<Position> getPossibleMoves() {
 		List<Position> moves = new ArrayList<>();
 		int[][] inc = {
 			{-1,-1,-1,0,0,1,1,1},
@@ -25,7 +25,7 @@ public class Queen extends Piece  {
 			while (getBoard().isValidBoardPosition(p)) {
 				p.incValues(inc[0][dir], inc[1][dir]);
 				if (!getBoard().isValidBoardPosition(p) ||
-					(getBoard().thereHavePiece(p) && !getBoard().isOpponentPiece(p, getColor())))
+					(!getBoard().isFreeSlot(p) && !getBoard().isOpponentPiece(p, getColor())))
 					break; 
 				moves.add(new Position(p));
 				if (getBoard().isOpponentPiece(p, getColor()))

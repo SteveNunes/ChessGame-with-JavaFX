@@ -2,7 +2,7 @@ package piece;
 
 import java.util.Objects;
 
-import board.BoardException;
+import exceptions.BoardException;
 
 public class Position {
 

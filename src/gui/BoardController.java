@@ -54,9 +54,9 @@ public class BoardController implements Initializable {
 
 	@Override
 	public void initialize(URL url, ResourceBundle rb) {
-		PieceType[] types = {PieceType.BISHOP, PieceType.KING, PieceType.KNIGHT, PieceType.QUEEN, PieceType.ROOK, PieceType.PAWN};
+		PieceType[] types = {PieceType.CHUCKNORRIS, PieceType.BISHOP, PieceType.KING, PieceType.KNIGHT, PieceType.QUEEN, PieceType.ROOK, PieceType.PAWN};
 		PieceColor[] colors = {PieceColor.BLACK, PieceColor.WHITE};
-		pieces = new Image[2][6];
+		pieces = new Image[2][7];
 		for (int c = 0; c < colors.length; c++)
 			for (int t = 0; t < types.length; t++) {
 				String fileName = "/sprites/pieces/" + colors[c] + "_" + types[t] + ".png";
@@ -84,10 +84,14 @@ public class BoardController implements Initializable {
 		for (int n = 0; n < 64; n++)
 			drawTile(n);
 		imageViewTurn.setImage(getPieceImage(new Pawn(null, null, board.getCurrentColorTurn())));
+		if (board.checkMate()) {
+			playWav("checkmate");
+			msg(board.getCurrentColorTurn().name() + " won!");
+		}
 	}
 	
 	public Image getPieceImage(Piece p) {
-		PieceType[] types = {PieceType.BISHOP, PieceType.KING, PieceType.KNIGHT, PieceType.QUEEN, PieceType.ROOK, PieceType.PAWN};
+		PieceType[] types = {PieceType.CHUCKNORRIS, PieceType.BISHOP, PieceType.KING, PieceType.KNIGHT, PieceType.QUEEN, PieceType.ROOK, PieceType.PAWN};
 		PieceColor[] colors = {PieceColor.BLACK, PieceColor.WHITE};
 		for (int c = 0; c < colors.length; c++)
 			for (int t = 0; t < types.length; t++)
@@ -148,7 +152,7 @@ public class BoardController implements Initializable {
 		Position pos = new Position(y, x);
 
 		Rectangle rectangle = null;
-		Piece piece = board.getPieceAtPosition(pos);
+		Piece piece = board.getPieceAt(pos);
 		Canvas canvas = new Canvas(width, height);
     canvas.getGraphicsContext2D().drawImage(boardImage, x * 150, y * 150, 150, 150, 0, 0, width, height);
 
@@ -157,7 +161,7 @@ public class BoardController implements Initializable {
 			if (board.checkEnPassant() && board.getEnPassantPiece() == piece)
 				rectangle = newRectangle(Color.ORANGE);
 
-			if (board.currentColorIsInCheck() &&
+			if (board.currentColorIsChecked() &&
 					piece.getColor() == board.getCurrentColorTurn() &&
 					piece.getType() == PieceType.KING)
 						rectangle = newRectangle(Color.PINK); // Marca o rei com retângulo rosa, se ele estiver em check
@@ -167,7 +171,7 @@ public class BoardController implements Initializable {
 			if (board.getSelectedPiece().equals(piece)) // Marca com retângulo amarelo a pedra selecionada atualmente
 				rectangle = newRectangle(Color.YELLOW);
 			else if (board.getSelectedPiece().canMoveToPosition(pos)) // Marca com retângulo verde a casa onde a pedra selecionada pode ir (Se for casa onde houver uma pedra adversária, marca em vermelho)
-				rectangle = newRectangle(board.getPieceAtPosition(pos) != null ? Color.RED : Color.LIGHTGREEN);
+				rectangle = newRectangle(board.getPieceAt(pos) != null ? Color.RED : Color.LIGHTGREEN);
 		}
 		
 		Pane pane = new Pane(canvas);
@@ -183,7 +187,7 @@ public class BoardController implements Initializable {
     	try {
 	    	if (board.pieceIsSelected()) {
 	    		playWav(board.getSelectedPiece().getPosition().equals(pos) ? "unselect" :
-	    			board.getPieceAtPosition(pos) != null ? "capture" : "move");
+	    			board.getPieceAt(pos) != null ? "capture" : "move");
 	    		board.movePieceTo(pos);
 	    	}
 	    	else {

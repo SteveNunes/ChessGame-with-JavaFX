@@ -12,7 +12,7 @@ public class Knight extends Piece  {
 		{ super(board, position, PieceType.KNIGHT, color); }
 
 	@Override
-	public List<Position> possibleMoves() {
+	public List<Position> getPossibleMoves() {
 		List<Position> moves = new ArrayList<>();
 		int[][] inc = {
 			{-2,-2,-1,-1,2,2,1,1},
@@ -24,7 +24,7 @@ public class Knight extends Piece  {
 			p.setValues(getPosition());
 			p.incValues(inc[0][dir], inc[1][dir]);
 			if (getBoard().isValidBoardPosition(p) &&
-					(!getBoard().thereHavePiece(p) || getBoard().isOpponentPiece(p, getColor())))
+					(getBoard().isFreeSlot(p) || getBoard().isOpponentPiece(p, getColor())))
 						moves.add(new Position(p));
 		}
 		return moves;

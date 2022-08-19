@@ -1,4 +1,4 @@
-package board;
+package exceptions;
 
 public class PromotionException extends RuntimeException {
 
