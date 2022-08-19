@@ -83,11 +83,12 @@ public class BoardController implements Initializable {
 		gridPaneBoard.getChildren().clear();
 		for (int n = 0; n < 64; n++)
 			drawTile(n);
-		imageViewTurn.setImage(getPieceImage(new Pawn(null, null, board.getCurrentColorTurn())));
 		if (board.checkMate()) {
 			playWav("checkmate");
 			msg(board.getCurrentColorTurn().name() + " won!");
 		}
+		else
+			imageViewTurn.setImage(getPieceImage(new Pawn(null, null, board.getCurrentColorTurn())));
 	}
 	
 	public Image getPieceImage(Piece p) {
@@ -117,7 +118,7 @@ public class BoardController implements Initializable {
 	public void init() {
 		boardImage = new Image("/sprites/board.png");
 	  bounds = gridPaneBoard.getCellBounds(0, 0);
-		board = new Board();
+		board = new Board(PieceColor.BLACK);
 		board.reset();
 	  updateBoard();
 	}

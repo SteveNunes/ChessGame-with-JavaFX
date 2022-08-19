@@ -47,5 +47,6 @@
 		</attributes>
 	</classpathentry>
 	<classpathentry kind="lib" path="D:/Java/java-libs/MyPersonalLib.jar"/>
+	<classpathentry kind="lib" path="D:/Java/java-libs/ChessGameCore.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
