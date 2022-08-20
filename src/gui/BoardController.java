@@ -2,9 +2,13 @@ package gui;
 
 import java.net.URL;
 import java.util.Arrays;
+import java.util.List;
 import java.util.ResourceBundle;
 
 import board.Board;
+import enums.Icons;
+import enums.PieceColor;
+import enums.PieceType;
 import gui.util.Controller;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
@@ -27,8 +31,6 @@ import javafx.scene.text.Text;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 import piece.Piece;
-import piece.PieceColor;
-import piece.PieceType;
 import piece.Position;
 import pieces.Bishop;
 import pieces.King;
@@ -51,19 +53,38 @@ public class BoardController implements Initializable {
 	private Text textErrorMessage;
 	@FXML
 	private ImageView imageViewTurn;
+	@FXML
+	private Button buttonUndo;
+	@FXML
+	private Button buttonRedo;
 
 	@Override
 	public void initialize(URL url, ResourceBundle rb) {
-		PieceType[] types = {PieceType.CHUCKNORRIS, PieceType.BISHOP, PieceType.KING, PieceType.KNIGHT, PieceType.QUEEN, PieceType.ROOK, PieceType.PAWN};
-		PieceColor[] colors = {PieceColor.BLACK, PieceColor.WHITE};
-		pieces = new Image[2][7];
-		for (int c = 0; c < colors.length; c++)
-			for (int t = 0; t < types.length; t++) {
-				String fileName = "/sprites/pieces/" + colors[c] + "_" + types[t] + ".png";
+		List<PieceType> types = PieceType.getListOfAll();
+		List<PieceColor> colors = PieceColor.getListOfAll();
+		pieces = new Image[2][types.size()];
+		for (int c = 0; c < colors.size(); c++)
+			for (int t = 0; t < types.size(); t++) {
+				String fileName = "/sprites/pieces/" + colors.get(c) + "_" + types.get(t) + ".png";
 				pieces[c][t] = Controller.removeBgColor(new Image(fileName), Color.valueOf("#00FF00"), 10);
 			}
+		buttonUndo.setOnAction(e -> {
+			board.undoMove();
+			updateBoard();
+		});
+		buttonRedo.setOnAction(e -> {
+			board.redoMove();
+			updateBoard();
+		});
+		Controller.addIconToButton(buttonUndo, Icons.ICON_MOVEMAXLEFT.getValue(), 18, 18, 20);
+		Controller.addIconToButton(buttonRedo, Icons.ICON_MOVEMAXRIGHT.getValue(), 18, 18, 20);
 	}
 	
+	private void checkUndoButtons() {
+		buttonRedo.setDisable(!board.canRedoMove());
+		buttonUndo.setDisable(!board.canUndoMove());
+	}
+
 	private void errorMsg(String text) {
 		textErrorMessage.setText(text);
 		textErrorMessage.setFill(Color.RED);
@@ -89,14 +110,15 @@ public class BoardController implements Initializable {
 		}
 		else
 			imageViewTurn.setImage(getPieceImage(new Pawn(null, null, board.getCurrentColorTurn())));
+		checkUndoButtons();
 	}
 	
 	public Image getPieceImage(Piece p) {
-		PieceType[] types = {PieceType.CHUCKNORRIS, PieceType.BISHOP, PieceType.KING, PieceType.KNIGHT, PieceType.QUEEN, PieceType.ROOK, PieceType.PAWN};
-		PieceColor[] colors = {PieceColor.BLACK, PieceColor.WHITE};
-		for (int c = 0; c < colors.length; c++)
-			for (int t = 0; t < types.length; t++)
-				if (colors[c] == p.getColor() && types[t] == p.getType())
+		List<PieceType> types = PieceType.getListOfAll();
+		List<PieceColor> colors = PieceColor.getListOfAll();
+		for (int c = 0; c < colors.size(); c++)
+			for (int t = 0; t < types.size(); t++)
+				if (colors.get(c) == p.getColor() && types.get(t) == p.getType())
 					return pieces[c][t];
 		return null;
 	}
@@ -120,7 +142,36 @@ public class BoardController implements Initializable {
 	  bounds = gridPaneBoard.getCellBounds(0, 0);
 		board = new Board(PieceColor.BLACK);
 		board.reset();
+		setPiecesOnTheBoardForTestCheckMate();
 	  updateBoard();
+		buttonUndo.setDisable(true);
+		buttonRedo.setDisable(true);
+	}
+	
+	private void setPiecesOnTheBoard() {
+		board.addNewPiece("a8", PieceType.ROOK, PieceColor.WHITE);
+		board.addNewPiece("b8", PieceType.KNIGHT, PieceColor.WHITE);
+		board.addNewPiece("c8", PieceType.BISHOP, PieceColor.WHITE);
+		board.addNewPiece("d8", PieceType.QUEEN, PieceColor.WHITE);
+		board.addNewPiece("e8", PieceType.KING, PieceColor.WHITE);
+		board.addNewPiece("f8", PieceType.BISHOP, PieceColor.WHITE);
+		board.addNewPiece("g8", PieceType.KNIGHT, PieceColor.WHITE);
+		board.addNewPiece("h8", PieceType.ROOK, PieceColor.WHITE);
+		board.addNewPiece("a1", PieceType.ROOK, PieceColor.BLACK);
+		board.addNewPiece("b1", PieceType.KNIGHT, PieceColor.BLACK);
+		board.addNewPiece("c1", PieceType.BISHOP, PieceColor.BLACK);
+		board.addNewPiece("d1", PieceType.QUEEN, PieceColor.BLACK);
+		board.addNewPiece("e1", PieceType.KING, PieceColor.BLACK);
+		board.addNewPiece("f1", PieceType.BISHOP, PieceColor.BLACK);
+		board.addNewPiece("g1", PieceType.KNIGHT, PieceColor.BLACK);
+		board.addNewPiece("h1", PieceType.ROOK, PieceColor.BLACK);
+	}
+
+	private void setPiecesOnTheBoardForTestCheckMate() {
+		board.addNewPiece("h8", PieceType.KING, PieceColor.WHITE);
+		board.addNewPiece("f6", PieceType.QUEEN, PieceColor.BLACK);
+		board.addNewPiece("a8", PieceType.ROOK, PieceColor.WHITE);
+		board.addNewPiece("e1", PieceType.KING, PieceColor.BLACK);
 	}
 	
 	private int getBoardWidth()
@@ -198,7 +249,7 @@ public class BoardController implements Initializable {
     	}
   		catch (Exception ex) {
   			if (board.pieceIsSelected() && piece != null &&
-  					board.getSelectedPiece().getColor() == piece.getColor()) {
+  					!board.isOpponentPieces(board.getSelectedPiece(), piece)) {
 		  				// Se clicar em cima de uma pedra da mesma cor, já tendo uma pedra previamente selecionada, muda a seleção para a pedra atual (se for uma pedra diferete da selecionada) ou cancela a seleção atual
   						board.cancelSelection();
 			    		playWav(board.getSelectedPiece() != piece ? "select" : "unselect");
@@ -266,7 +317,7 @@ public class BoardController implements Initializable {
 			Button button = new Button();
 			button.setGraphic(imageView);
 			button.setOnAction(e -> {
-				board.promotePiece(type);
+				board.promotePieceTo(type);
 				stage.close();
     		playWav("promotion");
 				updateBoard();
