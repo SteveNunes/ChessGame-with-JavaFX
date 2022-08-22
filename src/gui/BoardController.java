@@ -79,6 +79,8 @@ public class BoardController implements Initializable {
   @FXML
   private Text textCronometroWhite;
   @FXML
+  private Text textTurn;
+  @FXML
   private FlowPane flowPaneBlackCapturedPieces;
   @FXML
   private FlowPane flowPaneWhiteCapturedPieces;
@@ -105,7 +107,7 @@ public class BoardController implements Initializable {
 		Controller.addIconToButton(buttonUndo, Icons.ICON_MOVEMAXLEFT.getValue(), 18, 18, 20);
 		Controller.addIconToButton(buttonRedo, Icons.ICON_MOVEMAXRIGHT.getValue(), 18, 18, 20);
 		buttonResetGame.setOnAction(e -> {
-			if (Alerts.confirmation("Reiniciar jogo", "Deseja mesmo reiniciar o jogo?"))
+			if (Alerts.confirmation("Restart game", "Are you sure?"))
 				resetGame();
 		});
 	}
@@ -179,6 +181,7 @@ public class BoardController implements Initializable {
 			imageView.setFitHeight(32);
 			flowPaneBlackCapturedPieces.getChildren().add(imageView);
 		}
+		textTurn.setText("" + board.getTurns());
 	}
 	
 	public Image getPieceImage(Piece p) {
@@ -281,7 +284,7 @@ public class BoardController implements Initializable {
       pane.getChildren().add(rectangle);
     gridPaneBoard.add(pane, x, y);
 
-    if (!board.checkMate() && !board.drawGame()) {
+    if (!board.isGameOver()) {
 	    pane.setOnMouseClicked(e -> boardClick(piece, pos));
 	  	pane.hoverProperty().addListener((obs, wasHover, isHover) -> boardMouseHover(piece, pos, wasHover, isHover));
     }
@@ -304,23 +307,26 @@ public class BoardController implements Initializable {
 	}
 
 	private void boardClick(Piece piece, PiecePosition pos) {
-  	if (board.checkMate() || board.drawGame())
+  	if (board.isGameOver())
   		return;
   	msg("");
   	if (checkIfPieceIsPromoted(true))
   		return;
   		
+		System.out.println("A");
   	try {
     	if (board.pieceIsSelected()) {
     		if (board.getSelectedPiece().getPosition().equals(pos))
     			pieceWasUnselected();
     		else if (board.getPieceAt(pos) != null && !board.isOpponentPieces(board.getSelectedPiece(), board.getPieceAt(pos)))
     			pieceWasUnselected(pos);
-    		else
+    		else {
+    			System.out.println("A");
     			movedPieceTo(pos);
+    		}
     	}
     	else {
-    		board.selectPiece(pos);
+     		board.selectPiece(pos);
     		playWav("select");
     		if (cronoTurn == null)
     			resumirCronometro(cronoTurn = board.getCurrentColorTurn());
@@ -359,7 +365,7 @@ public class BoardController implements Initializable {
 			cronometroBlack.setPausado(true);
 			cronometroWhite.setPausado(true);
 			cronometroGame.setPausado(true);
-			msg("Checkmate! " + board.opponentColor().name() + " won!", Color.BLUE);
+			msg("Checkmate! " + board.getWinnerColor().name() + " won!", Color.BLUE);
 		}
 		else if (board.drawGame()) {
 			playWav("loose");

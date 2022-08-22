@@ -73,11 +73,20 @@
                                  <children>
                                     <VBox alignment="CENTER" spacing="5.0">
                                        <children>
-                                          <Text strokeType="OUTSIDE" strokeWidth="0.0" text="Turn">
-                                             <font>
-                                                <Font name="Lucida Console" size="20.0" />
-                                             </font>
-                                          </Text>
+                                          <HBox spacing="5.0">
+                                             <children>
+                                                <Text strokeType="OUTSIDE" strokeWidth="0.0" text="Turn">
+                                                   <font>
+                                                      <Font name="Lucida Console" size="20.0" />
+                                                   </font>
+                                                </Text>
+                                                <Text fx:id="textTurn" strokeType="OUTSIDE" strokeWidth="0.0">
+                                                   <font>
+                                                      <Font name="Lucida Console" size="20.0" />
+                                                   </font>
+                                                </Text>
+                                             </children>
+                                          </HBox>
                                           <ImageView fx:id="imageViewTurn" fitHeight="64.0" fitWidth="64.0" pickOnBounds="true" preserveRatio="true" />
                                           <HBox alignment="CENTER" spacing="10.0">
                                              <children>
@@ -137,7 +146,7 @@
                            <children>
                               <HBox alignment="CENTER">
                                  <children>
-                                    <Button fx:id="buttonResetGame" mnemonicParsing="false" text="Reiniciar jogo">
+                                    <Button fx:id="buttonResetGame" mnemonicParsing="false" text="Reset game">
                                        <font>
                                           <Font name="Lucida Console" size="14.0" />
                                        </font>
