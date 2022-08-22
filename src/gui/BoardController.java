@@ -1,14 +1,12 @@
 package gui;
 
 import java.net.URL;
-import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.List;
 import java.util.ResourceBundle;
 
 import board.Board;
 import enums.Icons;
-import enums.PeriodToMillis;
 import enums.PieceColor;
 import enums.PieceType;
 import gui.util.Controller;
@@ -54,7 +52,9 @@ public class BoardController implements Initializable {
 	private Cronometro cronometroGame;
 	private Cronometro cronometroBlack;
 	private Cronometro cronometroWhite;
+	private Piece hoveredPiece;
 	private PieceColor cronoTurn;
+	private PiecePosition mouseHoverPos;
 	private Board board;
 	private Image boardImage;
 	private Bounds bounds;
@@ -110,6 +110,40 @@ public class BoardController implements Initializable {
 		});
 	}
 	
+	public void init() {
+		boardImage = new Image("/sprites/board.png");
+	  bounds = gridPaneBoard.getCellBounds(0, 0);
+		board = new Board(PieceColor.BLACK);
+	  initTimer();
+		resetGame();
+	}
+	
+	private void resetGame() {
+		msg("");
+		board.reset();
+		setPiecesOnTheBoard();
+		board.validateBoard();
+	  updateBoard();
+		buttonUndo.setDisable(true);
+		buttonRedo.setDisable(true);
+		resumirCronometro(null);
+		hoveredPiece = null;
+	}
+
+	private void initTimer() {
+		resumirCronometro(null);
+		Timeline timeline = new Timeline(new KeyFrame(Duration.millis(50), e -> boardTimer()));
+    timeline.setCycleCount(Animation.INDEFINITE);
+    timeline.play();
+		boardTimer();
+	}
+
+	private void boardTimer() {
+		textCronometroGame.setText(cronometroGame.getDuracaoStr());
+		textCronometroBlack.setText(cronometroBlack.getDuracaoStr());
+		textCronometroWhite.setText(cronometroWhite.getDuracaoStr());
+	}
+
 	private void checkUndoButtons() {
 		buttonRedo.setDisable(!board.canRedoMove());
 		buttonUndo.setDisable(!board.canUndoMove());
@@ -124,15 +158,12 @@ public class BoardController implements Initializable {
 		{ msg(text, Color.BLACK); }
 
 	private void updateBoard() {
+		if (board.pieceIsSelected())
+			hoveredPiece = null;
 		gridPaneBoard.getChildren().clear();
 		for (int n = 0; n < 64; n++)
 			drawTile(n);
-		if (board.checkMate()) {
-			playWav("checkmate");
-			msg(board.getCurrentColorTurn().name() + " won!");
-		}
-		else
-			imageViewTurn.setImage(getPieceImage(new Pawn(null, null, board.getCurrentColorTurn())));
+		imageViewTurn.setImage(getPieceImage(new Pawn(null, null, board.getCurrentColorTurn())));
 		checkUndoButtons();
 		flowPaneWhiteCapturedPieces.getChildren().clear();
 		for (Piece piece : board.getCapturedPieces(PieceColor.BLACK)) {
@@ -174,72 +205,17 @@ public class BoardController implements Initializable {
 		return getPieceImage(new Pawn(null, null, color));
 	}
 
-	public void init() {
-		boardImage = new Image("/sprites/board.png");
-	  bounds = gridPaneBoard.getCellBounds(0, 0);
-		board = new Board(PieceColor.BLACK);
-	  initTimer();
-		resetGame();
-	}
-	
-	private void resetGame() {
-		board.reset();
-		setPiecesOnTheBoard();
-	  updateBoard();
-	  Board.resetUndoMoves();
-		buttonUndo.setDisable(true);
-		buttonRedo.setDisable(true);
-		resumirCronometro(null);
-	}
-
-	private void initTimer() {
-		resumirCronometro(null);
-		Timeline timeline = new Timeline(new KeyFrame(Duration.millis(50), e -> boardTimer()));
-    timeline.setCycleCount(Animation.INDEFINITE);
-    timeline.play();
-		boardTimer();
-	}
-
-	private void boardTimer() {
-		textCronometroGame.setText(new SimpleDateFormat("HH:mm:ss.SSS").format(cronometroGame.getDuracao() + PeriodToMillis.HOUR.getValue() * 3));
-		textCronometroBlack.setText(new SimpleDateFormat("HH:mm:ss.SSS").format(cronometroBlack.getDuracao() + PeriodToMillis.HOUR.getValue() * 3));
-		textCronometroWhite.setText(new SimpleDateFormat("HH:mm:ss.SSS").format(cronometroWhite.getDuracao() + PeriodToMillis.HOUR.getValue() * 3));
-	}
-
 	private void setPiecesOnTheBoard() {
-		board.addNewPiece("a8", PieceType.ROOK, PieceColor.WHITE);
-		board.addNewPiece("b8", PieceType.KNIGHT, PieceColor.WHITE);
-		board.addNewPiece("c8", PieceType.BISHOP, PieceColor.WHITE);
-		board.addNewPiece("d8", PieceType.QUEEN, PieceColor.WHITE);
-		board.addNewPiece("e8", PieceType.KING, PieceColor.WHITE);
-		board.addNewPiece("f8", PieceType.BISHOP, PieceColor.WHITE);
-		board.addNewPiece("g8", PieceType.KNIGHT, PieceColor.WHITE);
-		board.addNewPiece("h8", PieceType.ROOK, PieceColor.WHITE);
-		board.addNewPiece("a7", PieceType.PAWN, PieceColor.WHITE);
-		board.addNewPiece("b7", PieceType.PAWN, PieceColor.WHITE);
-		board.addNewPiece("c7", PieceType.PAWN, PieceColor.WHITE);
-		board.addNewPiece("d7", PieceType.PAWN, PieceColor.WHITE);
-		board.addNewPiece("e7", PieceType.PAWN, PieceColor.WHITE);
-		board.addNewPiece("f7", PieceType.PAWN, PieceColor.WHITE);
-		board.addNewPiece("g7", PieceType.PAWN, PieceColor.WHITE);
-		board.addNewPiece("h7", PieceType.PAWN, PieceColor.WHITE);
-		
-		board.addNewPiece("a2", PieceType.PAWN, PieceColor.BLACK);
-		board.addNewPiece("b2", PieceType.PAWN, PieceColor.BLACK);
-		board.addNewPiece("c2", PieceType.PAWN, PieceColor.BLACK);
-		board.addNewPiece("d2", PieceType.PAWN, PieceColor.BLACK);
-		board.addNewPiece("e2", PieceType.PAWN, PieceColor.BLACK);
-		board.addNewPiece("f2", PieceType.PAWN, PieceColor.BLACK);
-		board.addNewPiece("g2", PieceType.PAWN, PieceColor.BLACK);
-		board.addNewPiece("h2", PieceType.PAWN, PieceColor.BLACK);
-		board.addNewPiece("a1", PieceType.ROOK, PieceColor.BLACK);
-		board.addNewPiece("b1", PieceType.KNIGHT, PieceColor.BLACK);
-		board.addNewPiece("c1", PieceType.BISHOP, PieceColor.BLACK);
-		board.addNewPiece("d1", PieceType.QUEEN, PieceColor.BLACK);
-		board.addNewPiece("e1", PieceType.KING, PieceColor.BLACK);
-		board.addNewPiece("f1", PieceType.BISHOP, PieceColor.BLACK);
-		board.addNewPiece("g1", PieceType.KNIGHT, PieceColor.BLACK);
-		board.addNewPiece("h1", PieceType.ROOK, PieceColor.BLACK);
+		board.setBoard(new Character[][] {
+			{'r','n','b','q','k','b','n','r'},
+			{'p','p','p','p','p','p','p','p'},
+			{' ',' ',' ',' ',' ',' ',' ',' '},
+			{' ',' ',' ',' ',' ',' ',' ',' '},
+			{' ',' ',' ',' ',' ',' ',' ',' '},
+			{' ',' ',' ',' ',' ',' ',' ',' '},
+			{'P','P','P','P','P','P','P','P'},
+			{'R','N','B','Q','K','B','N','R'}
+		});
 	}
 	
 	private int getBoardWidth()
@@ -251,10 +227,10 @@ public class BoardController implements Initializable {
 	private Rectangle newRectangle(Color color) {
 		int width = getBoardWidth();
 		int height = getBoardHeight();
-		Rectangle rectangle = new Rectangle(2, 2, width - 4 , height - 4);
+		Rectangle rectangle = new Rectangle(3, 3, width - 6 , height - 6);
 		rectangle.setFill(Color.TRANSPARENT);
 		rectangle.setStroke(color);
-		rectangle.setStrokeWidth(4);
+		rectangle.setStrokeWidth(6);
 		return rectangle;
 	}
 	
@@ -273,13 +249,15 @@ public class BoardController implements Initializable {
 
 		Rectangle rectangle = null;
 		Piece piece = board.getPieceAt(pos);
+		Boolean justHovered = hoveredPiece != null;
+		Piece selectedPiece = justHovered ? hoveredPiece : board.getSelectedPiece();
 		Canvas canvas = new Canvas(width, height);
     canvas.getGraphicsContext2D().drawImage(boardImage, x * 150, y * 150, 150, 150, 0, 0, width, height);
 
 		if (piece != null) {
 			canvas.getGraphicsContext2D().drawImage(getPieceImage(piece), 0, 0, 250, 250, 0, 0, width, height);
-			if (board.checkEnPassant() && board.getEnPassantPiece() == piece)
-				rectangle = newRectangle(Color.ORANGE);
+			if (board.checkEnPassant(selectedPiece) && board.getEnPassantPiece(selectedPiece) == piece)
+				rectangle = newRectangle(justHovered ? Color.ORANGE : Color.ORANGERED);
 
 			if (board.currentColorIsChecked() &&
 					piece.getColor() == board.getCurrentColorTurn() &&
@@ -287,11 +265,15 @@ public class BoardController implements Initializable {
 						rectangle = newRectangle(Color.PINK); // Marca o rei com retângulo rosa, se ele estiver em check
 		}
 		
-		if (board.pieceIsSelected()) { 
-			if (board.getSelectedPiece().equals(piece)) // Marca com retângulo amarelo a pedra selecionada atualmente
-				rectangle = newRectangle(Color.YELLOW);
-			else if (board.getSelectedPiece().canMoveToPosition(pos)) // Marca com retângulo verde a casa onde a pedra selecionada pode ir (Se for casa onde houver uma pedra adversária, marca em vermelho)
-				rectangle = newRectangle(board.getPieceAt(pos) != null ? Color.RED : Color.LIGHTGREEN);
+		if (justHovered || board.pieceIsSelected()) { 
+			if (selectedPiece.equals(piece)) // Marca com retângulo amarelo a pedra selecionada atualmente
+				rectangle = newRectangle(justHovered ? Color.ANTIQUEWHITE : Color.YELLOW);
+			else if (pos.equals(mouseHoverPos))
+				rectangle = newRectangle(Color.WHITE);
+			else if (selectedPiece.canMoveToPosition(pos)) // Marca com retângulo verde a casa onde a pedra selecionada pode ir (Se for casa onde houver uma pedra adversária, marca em vermelho)
+				rectangle = newRectangle(board.getPieceAt(pos) != null ? 
+						(justHovered ? Color.INDIANRED : Color.RED) :
+						(justHovered ? Color.LIGHTBLUE : Color.LIGHTGREEN));
 		}
 		
 		Pane pane = new Pane(canvas);
@@ -299,31 +281,43 @@ public class BoardController implements Initializable {
       pane.getChildren().add(rectangle);
     gridPaneBoard.add(pane, x, y);
 
-    pane.setOnMouseClicked(e -> boardClick(piece, pos));
+    if (!board.checkMate() && !board.drawGame()) {
+	    pane.setOnMouseClicked(e -> boardClick(piece, pos));
+	  	pane.hoverProperty().addListener((obs, wasHover, isHover) -> boardMouseHover(piece, pos, wasHover, isHover));
+    }
 	}
 	
+	private void boardMouseHover(Piece piece, PiecePosition pos, Boolean wasHover, Boolean isHover) {
+		if (isHover) {
+	    if (!board.pieceIsSelected() && (hoveredPiece == null || piece != hoveredPiece)) {
+  			if (piece != null && piece.getColor() == board.getCurrentColorTurn())
+	  			hoveredPiece = piece;
+  			else
+  				hoveredPiece = null;
+  			updateBoard();
+	    }
+	    if (mouseHoverPos == null || !mouseHoverPos.equals(pos)) {
+  			mouseHoverPos = new PiecePosition(pos);
+  			updateBoard();
+	    }
+		}
+	}
+
 	private void boardClick(Piece piece, PiecePosition pos) {
-  	if (board.checkMate()) {
-  		board.reset();
-  		Board.resetUndoMoves();
-  	  updateBoard();
-    	msg("Tabuleiro reiniciado.");
-    	setPiecesOnTheBoard();
+  	if (board.checkMate() || board.drawGame())
   		return;
-  	}
   	msg("");
   	if (checkIfPieceIsPromoted(true))
   		return;
   		
   	try {
     	if (board.pieceIsSelected()) {
-    		playWav(board.getSelectedPiece().getPosition().equals(pos) ? "unselect" :
-    			board.getPieceAt(pos) != null ? "capture" : "move");
-    		board.movePieceTo(pos);
-    		if (cronoTurn != null && cronoTurn != board.getCurrentColorTurn()) {
-    			resumirCronometro(board.getCurrentColorTurn());
-    			cronoTurn = null;
-    		}
+    		if (board.getSelectedPiece().getPosition().equals(pos))
+    			pieceWasUnselected();
+    		else if (board.getPieceAt(pos) != null && !board.isOpponentPieces(board.getSelectedPiece(), board.getPieceAt(pos)))
+    			pieceWasUnselected(pos);
+    		else
+    			movedPieceTo(pos);
     	}
     	else {
     		board.selectPiece(pos);
@@ -355,6 +349,52 @@ public class BoardController implements Initializable {
 	  updateBoard();
 	  checkIfPieceIsPromoted();
 	}
+
+	private void movedPieceTo(PiecePosition pos) {
+		Boolean wasCheckedBefore = board.isChecked(board.opponentColor());
+		board.movePieceTo(pos);
+		playWav(board.pieceWasCaptured() ? "capture" : "move");
+		if (board.checkMate()) {
+			playWav("checkmate");
+			cronometroBlack.setPausado(true);
+			cronometroWhite.setPausado(true);
+			cronometroGame.setPausado(true);
+			msg("Checkmate! " + board.opponentColor().name() + " won!", Color.BLUE);
+		}
+		else if (board.drawGame()) {
+			playWav("loose");
+			cronometroBlack.setPausado(true);
+			cronometroWhite.setPausado(true);
+			cronometroGame.setPausado(true);
+			msg("Draw game!", Color.RED);
+		}
+		else {
+			if (!wasCheckedBefore && board.isChecked(board.getCurrentColorTurn())) {
+				msg(board.getCurrentColorTurn().name() + " is checked!", Color.RED);
+				playWav("check");
+			}
+			else if (board.lastMoveWasCastling()) {
+				playWav("castling");
+				msg(board.opponentColor().name() + " performed a \"castling\"", Color.GREEN);
+			}
+			else if (board.lastMoveWasEnPassant())
+				msg(board.opponentColor().name() + " performed an \"En Passant\"", Color.GREEN);
+			if (cronoTurn != null && cronoTurn != board.getCurrentColorTurn()) {
+				resumirCronometro(board.getCurrentColorTurn());
+				cronoTurn = null;
+			}
+		}
+	}
+
+	private void pieceWasUnselected(PiecePosition position) {
+		board.cancelSelection();
+		playWav(position != null ? "select" : "unselect");
+		if (position != null)
+			board.selectPiece(position);
+	}
+	
+	private void pieceWasUnselected()
+		{ pieceWasUnselected(null); }
 
 	private void resumirCronometro(PieceColor color) {
 		cronoTurn = color;
