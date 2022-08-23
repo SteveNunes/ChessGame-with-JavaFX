@@ -2,6 +2,7 @@
 
 <?import javafx.geometry.Insets?>
 <?import javafx.scene.control.Button?>
+<?import javafx.scene.control.ScrollBar?>
 <?import javafx.scene.control.Separator?>
 <?import javafx.scene.image.ImageView?>
 <?import javafx.scene.layout.ColumnConstraints?>
@@ -96,18 +97,46 @@
                                           </HBox>
                                        </children>
                                     </VBox>
-                                    <VBox>
+                                    <VBox spacing="30.0">
                                        <children>
-                                          <Text strokeType="OUTSIDE" strokeWidth="0.0" text="Game:">
-                                             <font>
-                                                <Font name="Lucida Console" size="20.0" />
-                                             </font>
-                                          </Text>
-                                          <Text fx:id="textCronometroGame" strokeType="OUTSIDE" strokeWidth="0.0" text="00:00:00.00">
-                                             <font>
-                                                <Font name="Lucida Console" size="20.0" />
-                                             </font>
-                                          </Text>
+                                          <VBox>
+                                             <children>
+                                                <Text strokeType="OUTSIDE" strokeWidth="0.0" text="Game:">
+                                                   <font>
+                                                      <Font name="Lucida Console" size="20.0" />
+                                                   </font>
+                                                </Text>
+                                                <Text fx:id="textCronometroGame" strokeType="OUTSIDE" strokeWidth="0.0" text="00:00:00.00">
+                                                   <font>
+                                                      <Font name="Lucida Console" size="20.0" />
+                                                   </font>
+                                                </Text>
+                                             </children>
+                                          </VBox>
+                                          <VBox fx:id="vBoxCpuSpeed">
+                                             <children>
+                                                <Text strokeType="OUTSIDE" strokeWidth="0.0" text="CPU speed:">
+                                                   <font>
+                                                      <Font name="Lucida Console" size="20.0" />
+                                                   </font>
+                                                </Text>
+                                                <ScrollBar fx:id="scrollBarCpuSpeed" max="5000.0" unitIncrement="50.0" value="1000.0" />
+                                                <HBox spacing="5.0">
+                                                   <children>
+                                                      <Text fx:id="textCpuSpeed" strokeType="OUTSIDE" strokeWidth="0.0">
+                                                         <font>
+                                                            <Font name="Lucida Console" size="20.0" />
+                                                         </font>
+                                                      </Text>
+                                                      <Text fx:id="textCpuSpeed1" strokeType="OUTSIDE" strokeWidth="0.0" text="ms">
+                                                         <font>
+                                                            <Font name="Lucida Console" size="20.0" />
+                                                         </font>
+                                                      </Text>
+                                                   </children>
+                                                </HBox>
+                                             </children>
+                                          </VBox>
                                        </children>
                                     </VBox>
                                  </children>

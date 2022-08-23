@@ -24,6 +24,7 @@ import javafx.scene.Group;
 import javafx.scene.Scene;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.control.Button;
+import javafx.scene.control.ScrollBar;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.FlowPane;
@@ -84,9 +85,15 @@ public class BoardController implements Initializable {
   @FXML
   private Text textTurn;
   @FXML
+  private Text textCpuSpeed;
+  @FXML
   private FlowPane flowPaneBlackCapturedPieces;
   @FXML
   private FlowPane flowPaneWhiteCapturedPieces;
+  @FXML
+  private VBox vBoxCpuSpeed;
+  @FXML
+  private ScrollBar scrollBarCpuSpeed;
 
 	@Override
 	public void initialize(URL url, ResourceBundle rb) {
@@ -124,6 +131,8 @@ public class BoardController implements Initializable {
 	}
 	
 	private void resetGame() {
+		vBoxCpuSpeed.setVisible(false);
+		vBoxCpuSpeed.setDisable(true);
 		msg("");
 		board.reset();
 		setPiecesOnTheBoard();
@@ -131,10 +140,14 @@ public class BoardController implements Initializable {
 		String opcao = Alerts.choiceCombo("Chess Game with JavaFX", "Game mode", "Select the game mode", opcoes);
 		if (opcao == null || opcao.equals(opcoes.get(0)))
 			board.setPlayMode(ChessPlayMode.PLAYER_VS_PLAYER);
-		else if (opcao.equals(opcoes.get(1)))
-			board.setPlayMode(ChessPlayMode.PLAYER_VS_CPU);
-		else
-			board.setPlayMode(ChessPlayMode.CPU_VS_CPU);
+		else {
+			if (opcao.equals(opcoes.get(1)))
+				board.setPlayMode(ChessPlayMode.PLAYER_VS_CPU);
+			else
+				board.setPlayMode(ChessPlayMode.CPU_VS_CPU);
+			vBoxCpuSpeed.setVisible(true);
+			vBoxCpuSpeed.setDisable(false);
+		}
 		Program.getMainStage().setTitle("Chess Game (" + opcao + ")");
 		board.validateBoard();
 	  updateBoard();
@@ -148,7 +161,7 @@ public class BoardController implements Initializable {
 
 	private void cpuPlay() {
 		if (board.isCpuTurn() && cpuPlay == 0)
-			cpuPlay = System.currentTimeMillis() + 1000;
+			cpuPlay = System.currentTimeMillis() + (long)scrollBarCpuSpeed.getValue();
 	  updateBoard();
 	}
 
@@ -161,6 +174,7 @@ public class BoardController implements Initializable {
 	}
 
 	private void boardTimer() {
+		textCpuSpeed.setText("" + (int)scrollBarCpuSpeed.getValue());
 		textCronometroGame.setText(cronometroGame.getDuracaoStr());
 		textCronometroBlack.setText(cronometroBlack.getDuracaoStr());
 		textCronometroWhite.setText(cronometroWhite.getDuracaoStr());
@@ -169,9 +183,11 @@ public class BoardController implements Initializable {
 				movedPieceTo();
 			else {
 				playWav("select");
+				System.out.println("A");
 				board.doCpuSelectAPiece();
+				System.out.println("B");
 				updateBoard();
-				cpuPlay += 1000;
+				cpuPlay += scrollBarCpuSpeed.getValue();
 			}
 		}
 	}
