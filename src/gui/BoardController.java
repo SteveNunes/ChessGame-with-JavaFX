@@ -5,7 +5,9 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.ResourceBundle;
 
+import application.Program;
 import board.Board;
+import enums.ChessPlayMode;
 import enums.Icons;
 import enums.PieceColor;
 import enums.PieceType;
@@ -59,6 +61,7 @@ public class BoardController implements Initializable {
 	private Image boardImage;
 	private Bounds bounds;
 	private Image[][] pieces;
+	private long cpuPlay;
 	
 	@FXML
 	private GridPane gridPaneBoard;
@@ -124,12 +127,29 @@ public class BoardController implements Initializable {
 		msg("");
 		board.reset();
 		setPiecesOnTheBoard();
+		List<String> opcoes = Arrays.asList("Player Vs. Player", "Player Vs. CPU", "CPU Vs. CPU");
+		String opcao = Alerts.choiceCombo("Chess Game with JavaFX", "Game mode", "Select the game mode", opcoes);
+		if (opcao == null || opcao.equals(opcoes.get(0)))
+			board.setPlayMode(ChessPlayMode.PLAYER_VS_PLAYER);
+		else if (opcao.equals(opcoes.get(1)))
+			board.setPlayMode(ChessPlayMode.PLAYER_VS_CPU);
+		else
+			board.setPlayMode(ChessPlayMode.CPU_VS_CPU);
+		Program.getMainStage().setTitle("Chess Game (" + opcao + ")");
 		board.validateBoard();
 	  updateBoard();
 		buttonUndo.setDisable(true);
 		buttonRedo.setDisable(true);
 		resumirCronometro(null);
 		hoveredPiece = null;
+		cpuPlay = 0;
+		cpuPlay();
+	}
+
+	private void cpuPlay() {
+		if (board.isCpuTurn() && cpuPlay == 0)
+			cpuPlay = System.currentTimeMillis() + 1000;
+	  updateBoard();
 	}
 
 	private void initTimer() {
@@ -144,6 +164,16 @@ public class BoardController implements Initializable {
 		textCronometroGame.setText(cronometroGame.getDuracaoStr());
 		textCronometroBlack.setText(cronometroBlack.getDuracaoStr());
 		textCronometroWhite.setText(cronometroWhite.getDuracaoStr());
+		if (board.isCpuTurn() && cpuPlay != 0 && System.currentTimeMillis() >= cpuPlay) {
+			if (board.cpuSelectedAPiece())
+				movedPieceTo();
+			else {
+				playWav("select");
+				board.doCpuSelectAPiece();
+				updateBoard();
+				cpuPlay += 1000;
+			}
+		}
 	}
 
 	private void checkUndoButtons() {
@@ -271,7 +301,7 @@ public class BoardController implements Initializable {
 		if (justHovered || board.pieceIsSelected()) { 
 			if (selectedPiece.equals(piece)) // Marca com retângulo amarelo a pedra selecionada atualmente
 				rectangle = newRectangle(justHovered ? Color.ANTIQUEWHITE : Color.YELLOW);
-			else if (pos.equals(mouseHoverPos))
+			else if (!board.isCpuTurn() && pos.equals(mouseHoverPos))
 				rectangle = newRectangle(Color.WHITE);
 			else if (selectedPiece.canMoveToPosition(pos)) // Marca com retângulo verde a casa onde a pedra selecionada pode ir (Se for casa onde houver uma pedra adversária, marca em vermelho)
 				rectangle = newRectangle(board.getPieceAt(pos) != null ? 
@@ -284,7 +314,7 @@ public class BoardController implements Initializable {
       pane.getChildren().add(rectangle);
     gridPaneBoard.add(pane, x, y);
 
-    if (!board.isGameOver()) {
+    if (!board.isGameOver() && !board.isCpuTurn()) {
 	    pane.setOnMouseClicked(e -> boardClick(piece, pos));
 	  	pane.hoverProperty().addListener((obs, wasHover, isHover) -> boardMouseHover(piece, pos, wasHover, isHover));
     }
@@ -313,17 +343,14 @@ public class BoardController implements Initializable {
   	if (checkIfPieceIsPromoted(true))
   		return;
   		
-		System.out.println("A");
   	try {
     	if (board.pieceIsSelected()) {
     		if (board.getSelectedPiece().getPosition().equals(pos))
     			pieceWasUnselected();
     		else if (board.getPieceAt(pos) != null && !board.isOpponentPieces(board.getSelectedPiece(), board.getPieceAt(pos)))
     			pieceWasUnselected(pos);
-    		else {
-    			System.out.println("A");
+    		else
     			movedPieceTo(pos);
-    		}
     	}
     	else {
      		board.selectPiece(pos);
@@ -358,7 +385,14 @@ public class BoardController implements Initializable {
 
 	private void movedPieceTo(PiecePosition pos) {
 		Boolean wasCheckedBefore = board.isChecked(board.opponentColor());
-		board.movePieceTo(pos);
+		if (!board.isCpuTurn())
+			board.movePieceTo(pos);
+		else {
+			board.doCpuMoveSelectedPiece();
+			updateBoard();
+		}
+		cpuPlay = 0;
+		cpuPlay();
 		playWav(board.pieceWasCaptured() ? "capture" : "move");
 		if (board.checkMate()) {
 			playWav("checkmate");
@@ -389,8 +423,12 @@ public class BoardController implements Initializable {
 				resumirCronometro(board.getCurrentColorTurn());
 				cronoTurn = null;
 			}
+			cpuPlay();
 		}
 	}
+	
+	private void movedPieceTo()
+		{ movedPieceTo(null); }
 
 	private void pieceWasUnselected(PiecePosition position) {
 		board.cancelSelection();

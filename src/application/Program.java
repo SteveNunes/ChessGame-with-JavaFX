@@ -54,7 +54,7 @@ public class Program extends Application {
 			mainScene = new Scene(vBox);
 			stage.setScene(mainScene);
 			stage.setResizable(false);
-			stage.setTitle("Xadrez");
+			stage.setTitle("Chess Game");
 			BoardController controller = loader.getController();
 			stage.show();
 			controller.init();
