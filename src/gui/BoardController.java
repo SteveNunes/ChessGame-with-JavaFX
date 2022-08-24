@@ -134,13 +134,14 @@ public class BoardController implements Initializable {
 		vBoxCpuSpeed.setVisible(false);
 		vBoxCpuSpeed.setDisable(true);
 		msg("");
-		board.reset();
-		setPiecesOnTheBoard();
 		List<String> opcoes = Arrays.asList("Player Vs. Player", "Player Vs. CPU", "CPU Vs. CPU");
 		String opcao = Alerts.choiceCombo("Chess Game with JavaFX", "Game mode", "Select the game mode", opcoes);
-		if (opcao == null || opcao.equals(opcoes.get(0)))
+		if (opcao == null || opcao.equals(opcoes.get(0))) {
+			board = new Board(PieceColor.BLACK);
 			board.setPlayMode(ChessPlayMode.PLAYER_VS_PLAYER);
+		}
 		else {
+			board = new Board();
 			if (opcao.equals(opcoes.get(1)))
 				board.setPlayMode(ChessPlayMode.PLAYER_VS_CPU);
 			else
@@ -149,6 +150,7 @@ public class BoardController implements Initializable {
 			vBoxCpuSpeed.setDisable(false);
 		}
 		Program.getMainStage().setTitle("Chess Game (" + opcao + ")");
+		setPiecesOnTheBoard();
 		board.validateBoard();
 	  updateBoard();
 		buttonUndo.setDisable(true);
@@ -179,13 +181,20 @@ public class BoardController implements Initializable {
 		textCronometroBlack.setText(cronometroBlack.getDuracaoStr());
 		textCronometroWhite.setText(cronometroWhite.getDuracaoStr());
 		if (board.isCpuTurn() && cpuPlay != 0 && System.currentTimeMillis() >= cpuPlay) {
-			if (board.cpuSelectedAPiece())
+			if (board.getChessAI().cpuSelectedAPiece()) {
 				movedPieceTo();
+				if (board.pieceWasPromoted()) {
+					board.promotePieceTo(PieceType.QUEEN);
+	    		playWav("promotion");
+					cpuPlay += scrollBarCpuSpeed.getValue();
+					updateBoard();
+				}
+			}
 			else {
+    		if (cronoTurn == null)
+    			resumirCronometro(cronoTurn = board.getCurrentColorTurn());
 				playWav("select");
-				System.out.println("A");
-				board.doCpuSelectAPiece();
-				System.out.println("B");
+				board.getChessAI().doCpuSelectAPiece();
 				updateBoard();
 				cpuPlay += scrollBarCpuSpeed.getValue();
 			}
@@ -369,6 +378,7 @@ public class BoardController implements Initializable {
     			movedPieceTo(pos);
     	}
     	else {
+      	msg("");
      		board.selectPiece(pos);
     		playWav("select");
     		if (cronoTurn == null)
@@ -404,7 +414,7 @@ public class BoardController implements Initializable {
 		if (!board.isCpuTurn())
 			board.movePieceTo(pos);
 		else {
-			board.doCpuMoveSelectedPiece();
+			board.getChessAI().doCpuMoveSelectedPiece();
 			updateBoard();
 		}
 		cpuPlay = 0;
