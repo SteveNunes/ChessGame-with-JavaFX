@@ -284,7 +284,7 @@ public class BoardController implements Initializable {
 		return getPieceImage(new Pawn(null, null, color));
 	}
 
-	private void setPiecesOnTheBoard() throws Exception{
+	private void setPiecesOnTheBoard() throws Exception {
 		board.setBoard(new Character[][] {
 			{'r','n','b','q','k','b','n','r'},
 			{'p','p','p','p','p','p','p','p'},
@@ -469,7 +469,14 @@ public class BoardController implements Initializable {
 			cronometroBlack.setPausado(true);
 			cronometroWhite.setPausado(true);
 			cronometroGame.setPausado(true);
-			msg("Draw game!", Color.RED);
+			if (board.isDrawByStalemate())
+				msg("Draw game (Stalemate)", Color.RED);
+			else if (board.isDrawByBareKings())
+				msg("Draw game (Bare Kings)", Color.RED);
+			else if (board.isDrawByThreefoldRepetition())
+				msg("Draw game (Threefold-repetition)", Color.RED);
+			else
+				msg("Draw game", Color.RED);
 		}
 		return true;
 	}

@@ -25,17 +25,17 @@ public class Teste {
 		catch (Exception e) {}
 		
 		while (true) {
-			board = new Board(PieceColor.BLACK);
+			board = new Board(PieceColor.WHITE);
 			board.setPlayMode(ChessPlayMode.CPU_VS_CPU);
 			Character[][] pieces = new Character[][] {
+				{'K','R',' ',' ',' ',' ',' ',' '},
+				{'P','P',' ',' ','p',' ',' ',' '},
+				{' ',' ',' ','b',' ',' ',' ',' '},
 				{' ',' ',' ',' ',' ',' ',' ',' '},
-				{'k',' ','p',' ',' ',' ',' ',' '},
-				{' ','p','r','p','q',' ',' ',' '},
-				{' ',' ','p',' ',' ',' ',' ',' '},
-				{'B',' ',' ',' ',' ',' ',' ',' '},
 				{' ',' ',' ',' ',' ',' ',' ',' '},
-				{' ',' ',' ',' ',' ',' ','P','P'},
-				{' ',' ',' ',' ',' ',' ','P','K'}
+				{' ',' ',' ','R',' ',' ',' ',' '},
+				{' ',' ',' ',' ',' ',' ','p','p'},
+				{' ',' ',' ',' ',' ',' ','p','k'}
 			};
 			Piece[][] b = new Piece[8][8];
 			try
