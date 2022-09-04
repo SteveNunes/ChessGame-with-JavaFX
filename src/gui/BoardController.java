@@ -1,5 +1,6 @@
 package gui;
 
+import java.io.File;
 import java.net.URL;
 import java.security.SecureRandom;
 import java.util.Arrays;
@@ -139,10 +140,25 @@ public class BoardController implements Initializable {
 		cpuPlaySpeed = 1000;
 		soundEnabled = true;
 		chessPlayMode = ChessPlayMode.PLAYER_VS_PLAYER;
+		reloadPiecesImage();
 		FindFile.findDir("./src/sprites/pieces/","*").forEach(file -> {
 			final int n = Integer.parseInt(file.getName().replace("Type", ""));
-			CheckMenuItem checkMenuItem = new CheckMenuItem("" + n);
+			CheckMenuItem checkMenuItem = new CheckMenuItem();
 			checkMenuItem.setSelected(n == piecePngType);
+			
+			String fileNameTransp = file.getAbsolutePath() + "/" + "/TRANSPARENT";
+			String[] m = null;
+			try
+				{ m = MyFiles.readAllLinesFromFile(fileNameTransp).get(0).split(" "); }
+			catch (Exception e) {}
+			Image image = new Image(file.getAbsolutePath() + "/" + "WHITE_PAWN.png");
+			image = Controller.removeBgColor(image, pieceTransparentColor, Integer.parseInt(m[1]));
+			int width = 64;
+			int height = 64;
+			Canvas canvas = new Canvas(width, height);
+	    canvas.getGraphicsContext2D().drawImage(image, 0, 0, 250, 250, 0, 0, width, height);
+			
+			checkMenuItem.setGraphic(canvas);
 			checkMenuItem.setOnAction(e -> {
 				piecePngType = n;
 				reloadPiecesImage();
@@ -156,7 +172,7 @@ public class BoardController implements Initializable {
 			for (int x = 0; x < 2; x++) {
 				final int n = Integer.parseInt(file.getName().replace("board", "").replace(".png", ""));
 				final int xx = x;
-				CheckMenuItem checkMenuItem = new CheckMenuItem("" + n);
+				CheckMenuItem checkMenuItem = new CheckMenuItem();
 				checkMenuItem.setSelected(n == (xx == 0 ? boardPngTypeA : boardPngTypeB));
 				checkMenuItem.setOnAction(e -> {
 					if (xx == 0) {
@@ -171,6 +187,7 @@ public class BoardController implements Initializable {
 					reloadBoardImages();
 					updateBoard();
 				});
+				checkMenuItem.setGraphic(getTileIcon(file));
 				if (x == 0)
 					menuBoardOddTilesSprite.getItems().add(checkMenuItem);
 				else
@@ -202,7 +219,6 @@ public class BoardController implements Initializable {
 		menuCheckItemSound.setSelected(soundEnabled);
 		menuCheckItemSound.setOnAction(e -> soundEnabled = !soundEnabled);
 		menuItemCloseGame.setOnAction(e -> Program.getMainStage().close());
-		reloadPiecesImage();
 		buttonUndo.setOnAction(e -> {
 			board.undoMove();
 			updateBoard();
@@ -232,6 +248,7 @@ public class BoardController implements Initializable {
 					checkMenuItem.setSelected(true);
 					resetGame();
 				}
+				menuCpuSpeed.setDisable(gameMode == ChessPlayMode.PLAYER_VS_PLAYER);
 			});
 			menuGameMode.getItems().add(checkMenuItem);
 		}
@@ -244,11 +261,22 @@ public class BoardController implements Initializable {
 				menuCpuSpeed.getItems().forEach(menu -> ((CheckMenuItem)menu).setSelected(false));
 				cpuPlaySpeed = n2;
 				checkMenuItem.setSelected(true);
+				setTitle();
 			});
 			menuCpuSpeed.getItems().add(checkMenuItem);
 		}
+		menuCpuSpeed.setDisable(chessPlayMode == ChessPlayMode.PLAYER_VS_PLAYER);
 	}
 	
+	private Canvas getTileIcon(File file) {
+		Image image = new Image(file.getAbsolutePath());
+		int width = 64;
+		int height = 64;
+		Canvas canvas = new Canvas(width, height);
+    canvas.getGraphicsContext2D().drawImage(image, 0, 0, 150, 150, 0, 0, width, height);
+		return canvas;
+	}
+
 	private void reloadPiecesImage() {
 		String fileNameTransp = "./src/sprites/pieces/Type" + piecePngType + "/TRANSPARENT";
 		String[] m;
@@ -283,9 +311,16 @@ public class BoardController implements Initializable {
 		resetGame();
 	}
 	
+	private void setTitle() {
+		String title = "Chess Game (" + chessPlayMode.getName() + ")";
+		if (chessPlayMode == ChessPlayMode.PLAYER_VS_CPU)
+			title += " Cpu play speed: " + cpuPlaySpeed + "ms";
+		Program.getMainStage().setTitle(title);
+	}
+	
 	private void resetGame() {
 		msg("");
-		Program.getMainStage().setTitle("Chess Game (" + chessPlayMode.getName() + ")");
+		setTitle();
 		try {
 			board.reset();
 			setPiecesOnTheBoard();
@@ -378,7 +413,7 @@ public class BoardController implements Initializable {
 		gridPaneBoard.getChildren().clear();
 		for (int n = 0; n < 64; n++)
 			drawTile(n);
-		imageViewTurn.setImage(getPieceImage(new Pawn(null, null, board.getCurrentColorTurn())));
+		imageViewTurn.setImage(getPieceImage(PieceType.PAWN, board.getCurrentColorTurn()));
 		checkUndoButtons();
 		flowPaneWhiteCapturedPieces.getChildren().clear();
 		for (Piece piece : board.sortPieceListByPieceValue(board.getCapturedBlackPieces())) {
@@ -423,30 +458,17 @@ public class BoardController implements Initializable {
 	}
 
 	private void setPiecesOnTheBoard() throws Exception {
-		int n = 1;
-		if (n == 1)
-			board.setBoard(new Character[][] {
-				{'r','n','b','q','k','b','n','r'},
-				{'p','p','p','p','p','p','p','p'},
-				{' ',' ',' ',' ',' ',' ',' ',' '},
-				{' ',' ',' ',' ',' ',' ',' ',' '},
-				{' ',' ',' ',' ',' ',' ',' ',' '},
-				{' ',' ',' ',' ',' ',' ',' ',' '},
-				{'P','P','P','P','P','P','P','P'},
-				{'R','N','B','Q','K','B','N','R'}
-			});
-		else
-			board.setBoard(new Character[][] {
-				{'k',' ',' ',' ',' ',' ',' ',' '},
-				{' ',' ',' ','R',' ',' ',' ',' '},
-				{' ',' ','R',' ',' ',' ',' ',' '},
-				{' ',' ',' ',' ',' ',' ',' ',' '},
-				{' ',' ',' ',' ',' ',' ',' ',' '},
-				{' ',' ',' ',' ',' ',' ',' ',' '},
-				{' ','r',' ',' ',' ',' ','P','P'},
-				{' ',' ',' ',' ',' ',' ','P','K'}
-			});
-}
+		board.setBoard(new Character[][] {
+			{'r','n','b','q','k','b','n','r'},
+			{'p','p','p','p','p','p','p','p'},
+			{' ',' ',' ',' ',' ',' ',' ',' '},
+			{' ',' ',' ',' ',' ',' ',' ',' '},
+			{' ',' ',' ',' ',' ',' ',' ',' '},
+			{' ',' ',' ',' ',' ',' ',' ',' '},
+			{'P','P','P','P','P','P','P','P'},
+			{'R','N','B','Q','K','B','N','R'}
+		});
+	}
 	
 	private int getBoardWidth()
 		{ return (int)bounds.getWidth(); }

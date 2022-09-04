@@ -15,41 +15,26 @@ public class Teste {
 	private static Board board;
 	
 	public static void main(String[] args) {
-		System.out.println(MyFiles.readAllLinesFromFile("/sprites/pieces/Type1/TRANSPARENT.txt"));
-		System.out.println(MyFiles.readAllLinesFromFile("./sprites/pieces/Type1/TRANSPARENT.txt"));
-		System.out.println(MyFiles.readAllLinesFromFile("/src/sprites/pieces/Type1/TRANSPARENT.txt"));
-		System.out.println(MyFiles.readAllLinesFromFile("./src/sprites/pieces/Type1/TRANSPARENT.txt"));
-	}
-	
-	public static void amain(String[] args) {
 		Scanner sc = new Scanner(System.in);
-		
-		try {
-			int a = 1 + Integer.parseInt("a");
-			System.out.println("Ola " + a);
-			a += Integer.parseInt("2");
-			System.out.println("Ola2 " + a);
-		}
-		catch (Exception e) {}
 		
 		while (true) {
 			board = new Board();
-			board.setPlayMode(ChessPlayMode.CPU_VS_CPU);
 			Character[][] pieces = new Character[][] {
 				{'k',' ',' ',' ',' ',' ',' ',' '},
-				{'P',' ',' ',' ',' ',' ',' ',' '},
-				{' ',' ','R',' ',' ',' ',' ',' '},
 				{' ',' ',' ',' ',' ',' ',' ',' '},
 				{' ',' ',' ',' ',' ',' ',' ',' '},
+				{'r',' ','R',' ',' ',' ',' ',' '},
+				{' ',' ',' ','P',' ',' ',' ',' '},
 				{' ',' ',' ',' ',' ',' ',' ',' '},
-				{' ',' ',' ',' ',' ',' ',' ',' '},
-				{'r',' ',' ',' ',' ',' ',' ','K'}
+				{' ',' ',' ',' ',' ',' ','P','P'},
+				{' ',' ',' ',' ',' ',' ','R','K'}
 			};
 			Piece[][] b = new Piece[8][8];
 			try
 				{ board.setBoard(pieces);	}
 			catch (Exception e) {}
 			board.validateBoard();
+			board.setPlayMode(ChessPlayMode.CPU_VS_CPU);
 			board.getChessAI().doCpuSelectAPiece();
 			for (int y = 0; y < 8; y++)
 				for (int x = 0; x < 8; x++)
