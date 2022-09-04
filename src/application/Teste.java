@@ -8,12 +8,20 @@ import enums.PieceColor;
 import enums.PieceType;
 import piece.Piece;
 import piece.PiecePosition;
+import util.MyFiles;
 
 public class Teste {
 	
 	private static Board board;
 	
 	public static void main(String[] args) {
+		System.out.println(MyFiles.readAllLinesFromFile("/sprites/pieces/Type1/TRANSPARENT.txt"));
+		System.out.println(MyFiles.readAllLinesFromFile("./sprites/pieces/Type1/TRANSPARENT.txt"));
+		System.out.println(MyFiles.readAllLinesFromFile("/src/sprites/pieces/Type1/TRANSPARENT.txt"));
+		System.out.println(MyFiles.readAllLinesFromFile("./src/sprites/pieces/Type1/TRANSPARENT.txt"));
+	}
+	
+	public static void amain(String[] args) {
 		Scanner sc = new Scanner(System.in);
 		
 		try {
@@ -25,17 +33,17 @@ public class Teste {
 		catch (Exception e) {}
 		
 		while (true) {
-			board = new Board(PieceColor.WHITE);
+			board = new Board();
 			board.setPlayMode(ChessPlayMode.CPU_VS_CPU);
 			Character[][] pieces = new Character[][] {
-				{'K','R',' ',' ',' ',' ',' ',' '},
-				{'P','P',' ',' ','p',' ',' ',' '},
-				{' ',' ',' ','b',' ',' ',' ',' '},
+				{'k',' ',' ',' ',' ',' ',' ',' '},
+				{'P',' ',' ',' ',' ',' ',' ',' '},
+				{' ',' ','R',' ',' ',' ',' ',' '},
 				{' ',' ',' ',' ',' ',' ',' ',' '},
 				{' ',' ',' ',' ',' ',' ',' ',' '},
-				{' ',' ',' ','R',' ',' ',' ',' '},
-				{' ',' ',' ',' ',' ',' ','p','p'},
-				{' ',' ',' ',' ',' ',' ','p','k'}
+				{' ',' ',' ',' ',' ',' ',' ',' '},
+				{' ',' ',' ',' ',' ',' ',' ',' '},
+				{'r',' ',' ',' ',' ',' ',' ','K'}
 			};
 			Piece[][] b = new Piece[8][8];
 			try

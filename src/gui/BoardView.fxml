@@ -2,9 +2,12 @@
 
 <?import javafx.geometry.Insets?>
 <?import javafx.scene.control.Button?>
-<?import javafx.scene.control.CheckBox?>
-<?import javafx.scene.control.ScrollBar?>
+<?import javafx.scene.control.CheckMenuItem?>
+<?import javafx.scene.control.Menu?>
+<?import javafx.scene.control.MenuBar?>
+<?import javafx.scene.control.MenuItem?>
 <?import javafx.scene.control.Separator?>
+<?import javafx.scene.control.SeparatorMenuItem?>
 <?import javafx.scene.image.ImageView?>
 <?import javafx.scene.layout.ColumnConstraints?>
 <?import javafx.scene.layout.FlowPane?>
@@ -18,233 +21,247 @@
 
 <VBox alignment="TOP_CENTER" prefHeight="764.0" prefWidth="900.0" spacing="10.0" xmlns="http://javafx.com/javafx/18" xmlns:fx="http://javafx.com/fxml/1" fx:controller="gui.BoardController">
    <children>
-      <GridPane VBox.vgrow="ALWAYS">
-        <columnConstraints>
-          <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
-            <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="450.0" />
-          <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
-        </columnConstraints>
-        <rowConstraints>
-          <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
-        </rowConstraints>
+      <MenuBar>
+        <menus>
+          <Menu mnemonicParsing="false" text="Options">
+            <items>
+                  <Menu fx:id="menuGameMode" mnemonicParsing="false" text="Game mode" />
+                  <SeparatorMenuItem mnemonicParsing="false" />
+                  <Menu fx:id="menuCpuSpeed" mnemonicParsing="false" text="CPU action speed" />
+                  <SeparatorMenuItem mnemonicParsing="false" />
+                  <Menu mnemonicParsing="false" text="Board sprites">
+                     <items>
+                        <Menu mnemonicParsing="false" text="Board Sprite">
+                           <items>
+                              <Menu fx:id="menuBoardOddTilesSprite" mnemonicParsing="false" text="Odd tiles sprite" />
+                              <Menu fx:id="menuBoardEvenTilesSprite" mnemonicParsing="false" text="Even tiles sprite" />
+                              <MenuItem fx:id="menuItemRandomBoard" mnemonicParsing="false" text="Random" />
+                           </items>
+                        </Menu>
+                        <Menu fx:id="menuPieceSprite" mnemonicParsing="false" text="Piece sprite">
+                           <items>
+                              <CheckMenuItem fx:id="checkMenuItemRandomPieceSprite" mnemonicParsing="false" text="Random" />
+                           </items></Menu>
+                     </items>
+                  </Menu>
+                  <SeparatorMenuItem mnemonicParsing="false" />
+                  <CheckMenuItem fx:id="menuCheckItemSound" mnemonicParsing="false" text="Sound" />
+                  <SeparatorMenuItem mnemonicParsing="false" />
+                  <MenuItem fx:id="menuItemCloseGame" mnemonicParsing="false" text="Close game" />
+            </items>
+          </Menu>
+            <Menu mnemonicParsing="false" text="Edit board">
+               <items>
+                  <CheckMenuItem fx:id="menuCheckItemEditMode" mnemonicParsing="false" text="Edit mode" />
+                  <MenuItem fx:id="menuItemCreateNewBoard" mnemonicParsing="false" text="Create new board" />
+                  <Menu fx:id="menuLoadBoard" mnemonicParsing="false" text="Load board" />
+                  <MenuItem fx:id="menuItemSaveBoard" mnemonicParsing="false" text="Save board" />
+               </items>
+            </Menu>
+        </menus>
+      </MenuBar>
+      <VBox VBox.vgrow="ALWAYS">
          <children>
-            <VBox spacing="100.0">
+            <GridPane VBox.vgrow="ALWAYS">
+              <columnConstraints>
+                <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
+                  <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="450.0" />
+                <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
+              </columnConstraints>
+              <rowConstraints>
+                <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+              </rowConstraints>
                <children>
-                  <VBox spacing="10.0">
+                  <VBox spacing="100.0">
                      <children>
-                        <VBox>
+                        <VBox spacing="10.0">
                            <children>
-                              <Text strokeType="OUTSIDE" strokeWidth="0.0" text="Black:">
+                              <VBox alignment="TOP_CENTER">
+                                 <children>
+                                    <Text strokeType="OUTSIDE" strokeWidth="0.0" text="Black:">
+                                       <font>
+                                          <Font name="Lucida Console" size="20.0" />
+                                       </font>
+                                    </Text>
+                                    <Text fx:id="textCronometroBlack" strokeType="OUTSIDE" strokeWidth="0.0" text="00:00:00.00">
+                                       <font>
+                                          <Font name="Lucida Console" size="20.0" />
+                                       </font>
+                                    </Text>
+                                 </children>
+                              </VBox>
+                           </children>
+                        </VBox>
+                        <VBox alignment="TOP_CENTER">
+                           <children>
+                              <Text strokeType="OUTSIDE" strokeWidth="0.0" text="Captured pieces">
                                  <font>
-                                    <Font name="Lucida Console" size="20.0" />
+                                    <Font name="Lucida Console" size="18.0" />
                                  </font>
                               </Text>
-                              <Text fx:id="textCronometroBlack" strokeType="OUTSIDE" strokeWidth="0.0" text="00:00:00.00">
-                                 <font>
-                                    <Font name="Lucida Console" size="20.0" />
-                                 </font>
-                              </Text>
+                              <FlowPane fx:id="flowPaneBlackCapturedPieces" />
                            </children>
                         </VBox>
                      </children>
                   </VBox>
-                  <VBox>
+                  <HBox GridPane.columnIndex="1">
                      <children>
-                        <Text strokeType="OUTSIDE" strokeWidth="0.0" text="Captured pieces">
-                           <font>
-                              <Font name="Lucida Console" size="18.0" />
-                           </font>
-                        </Text>
-                        <FlowPane fx:id="flowPaneBlackCapturedPieces" />
-                     </children>
-                  </VBox>
-               </children>
-            </VBox>
-            <HBox GridPane.columnIndex="1">
-               <children>
-                  <Separator orientation="VERTICAL" HBox.hgrow="ALWAYS">
-                     <opaqueInsets>
-                        <Insets />
-                     </opaqueInsets>
-                  </Separator>
-                  <VBox spacing="5.0">
-                     <children>
-                        <VBox spacing="10.0">
+                        <Separator orientation="VERTICAL" HBox.hgrow="ALWAYS">
+                           <opaqueInsets>
+                              <Insets />
+                           </opaqueInsets>
+                        </Separator>
+                        <VBox spacing="5.0" HBox.hgrow="ALWAYS">
                            <children>
-                              <HBox alignment="CENTER" prefHeight="150.0" spacing="100.0">
+                              <VBox spacing="10.0">
                                  <children>
-                                    <GridPane hgap="10.0" HBox.hgrow="ALWAYS">
-                                      <columnConstraints>
-                                        <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
-                                        <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
-                                      </columnConstraints>
-                                      <rowConstraints>
-                                        <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
-                                      </rowConstraints>
+                                    <HBox alignment="CENTER" prefHeight="120.0" spacing="100.0">
                                        <children>
-                                          <VBox spacing="15.0" GridPane.columnIndex="1">
+                                          <GridPane hgap="10.0" HBox.hgrow="ALWAYS">
+                                            <columnConstraints>
+                                              <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
+                                              <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
+                                            </columnConstraints>
+                                            <rowConstraints>
+                                              <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+                                            </rowConstraints>
                                              <children>
-                                                <VBox>
+                                                <VBox spacing="15.0" GridPane.columnIndex="1">
                                                    <children>
-                                                      <Text strokeType="OUTSIDE" strokeWidth="0.0" text="Game:">
-                                                         <font>
-                                                            <Font name="Lucida Console" size="20.0" />
-                                                         </font>
-                                                      </Text>
-                                                      <Text fx:id="textCronometroGame" strokeType="OUTSIDE" strokeWidth="0.0" text="00:00:00.00">
-                                                         <font>
-                                                            <Font name="Lucida Console" size="20.0" />
-                                                         </font>
-                                                      </Text>
+                                                      <VBox alignment="CENTER">
+                                                         <children>
+                                                            <Text strokeType="OUTSIDE" strokeWidth="0.0" text="Game:">
+                                                               <font>
+                                                                  <Font name="Lucida Console" size="20.0" />
+                                                               </font>
+                                                            </Text>
+                                                            <Text fx:id="textCronometroGame" strokeType="OUTSIDE" strokeWidth="0.0" text="00:00:00.00">
+                                                               <font>
+                                                                  <Font name="Lucida Console" size="20.0" />
+                                                               </font>
+                                                            </Text>
+                                                         </children>
+                                                      </VBox>
                                                    </children>
                                                 </VBox>
-                                                <VBox fx:id="vBoxCpuSpeed">
+                                                <VBox alignment="CENTER" spacing="5.0">
                                                    <children>
-                                                      <HBox spacing="5.0">
+                                                      <HBox alignment="CENTER" spacing="5.0">
                                                          <children>
-                                                            <Text strokeType="OUTSIDE" strokeWidth="0.0" text="CPU speed:">
+                                                            <Text strokeType="OUTSIDE" strokeWidth="0.0" text="Turn:">
                                                                <font>
-                                                                  <Font name="Lucida Console" size="16.0" />
+                                                                  <Font name="Lucida Console" size="20.0" />
                                                                </font>
                                                             </Text>
-                                                            <Text fx:id="textCpuSpeed" strokeType="OUTSIDE" strokeWidth="0.0" text="1000">
+                                                            <Text fx:id="textTurn" strokeType="OUTSIDE" strokeWidth="0.0" text="0">
                                                                <font>
-                                                                  <Font name="Lucida Console" size="16.0" />
-                                                               </font>
-                                                            </Text>
-                                                            <Text fx:id="textCpuSpeed1" strokeType="OUTSIDE" strokeWidth="0.0" text="ms">
-                                                               <font>
-                                                                  <Font name="Lucida Console" size="16.0" />
+                                                                  <Font name="Lucida Console" size="20.0" />
                                                                </font>
                                                             </Text>
                                                          </children>
                                                       </HBox>
-                                                      <ScrollBar fx:id="scrollBarCpuSpeed" blockIncrement="200.0" max="5000.0" prefHeight="20.0" unitIncrement="200.0" value="1000.0" visibleAmount="50.0" />
+                                                      <ImageView fx:id="imageViewTurn" fitHeight="64.0" fitWidth="64.0" pickOnBounds="true" preserveRatio="true" />
+                                                      <HBox alignment="CENTER" spacing="10.0">
+                                                         <children>
+                                                            <Button fx:id="buttonUndo" mnemonicParsing="false" prefHeight="25.0" prefWidth="30.0" />
+                                                            <Button fx:id="buttonRedo" mnemonicParsing="false" prefHeight="25.0" prefWidth="30.0" />
+                                                         </children>
+                                                      </HBox>
                                                    </children>
                                                 </VBox>
-                                                <CheckBox fx:id="checkBoxSound" mnemonicParsing="false" text="Sound">
-                                                   <font>
-                                                      <Font name="Lucida Console" size="16.0" />
-                                                   </font>
-                                                </CheckBox>
                                              </children>
-                                          </VBox>
-                                          <VBox alignment="CENTER" spacing="5.0">
-                                             <children>
-                                                <HBox alignment="CENTER" spacing="5.0">
-                                                   <children>
-                                                      <Text strokeType="OUTSIDE" strokeWidth="0.0" text="Turn:">
-                                                         <font>
-                                                            <Font name="Lucida Console" size="20.0" />
-                                                         </font>
-                                                      </Text>
-                                                      <Text fx:id="textTurn" strokeType="OUTSIDE" strokeWidth="0.0" text="0">
-                                                         <font>
-                                                            <Font name="Lucida Console" size="20.0" />
-                                                         </font>
-                                                      </Text>
-                                                   </children>
-                                                </HBox>
-                                                <ImageView fx:id="imageViewTurn" fitHeight="64.0" fitWidth="64.0" pickOnBounds="true" preserveRatio="true" />
-                                                <HBox alignment="CENTER" spacing="10.0">
-                                                   <children>
-                                                      <Button fx:id="buttonUndo" mnemonicParsing="false" prefHeight="25.0" prefWidth="30.0" />
-                                                      <Button fx:id="buttonRedo" mnemonicParsing="false" prefHeight="25.0" prefWidth="30.0" />
-                                                   </children>
-                                                </HBox>
-                                             </children>
-                                          </VBox>
+                                             <opaqueInsets>
+                                                <Insets />
+                                             </opaqueInsets>
+                                             <padding>
+                                                <Insets left="10.0" right="10.0" />
+                                             </padding>
+                                          </GridPane>
                                        </children>
-                                       <opaqueInsets>
-                                          <Insets />
-                                       </opaqueInsets>
-                                       <padding>
-                                          <Insets left="10.0" right="10.0" />
-                                       </padding>
+                                    </HBox>
+                                 </children>
+                              </VBox>
+                              <Separator prefWidth="200.0" />
+                              <Pane VBox.vgrow="ALWAYS">
+                                 <children>
+                                    <GridPane fx:id="gridPaneBoard" prefHeight="512.0" prefWidth="512.0">
+                                      <columnConstraints>
+                                        <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
+                                        <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
+                                          <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
+                                          <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
+                                          <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
+                                          <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
+                                          <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
+                                          <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
+                                      </columnConstraints>
+                                      <rowConstraints>
+                                        <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+                                        <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+                                        <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+                                          <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+                                          <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+                                          <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+                                          <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+                                          <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+                                      </rowConstraints>
                                     </GridPane>
+                                 </children>
+                              </Pane>
+                              <Separator prefWidth="200.0" />
+                              <HBox alignment="CENTER">
+                                 <children>
+                                    <Button fx:id="buttonResetGame" mnemonicParsing="false" text="Reset game">
+                                       <font>
+                                          <Font name="Lucida Console" size="14.0" />
+                                       </font>
+                                    </Button>
                                  </children>
                               </HBox>
                            </children>
                         </VBox>
-                        <Separator prefWidth="200.0" />
-                        <Pane>
+                        <Separator orientation="VERTICAL" HBox.hgrow="ALWAYS" />
+                     </children>
+                  </HBox>
+                  <VBox spacing="100.0" GridPane.columnIndex="2">
+                     <children>
+                        <VBox alignment="TOP_CENTER">
                            <children>
-                              <GridPane fx:id="gridPaneBoard" prefHeight="512.0" prefWidth="512.0">
-                                <columnConstraints>
-                                  <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
-                                  <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
-                                    <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
-                                    <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
-                                    <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
-                                    <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
-                                    <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
-                                    <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
-                                </columnConstraints>
-                                <rowConstraints>
-                                  <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
-                                  <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
-                                  <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
-                                    <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
-                                    <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
-                                    <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
-                                    <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
-                                    <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
-                                </rowConstraints>
-                              </GridPane>
-                           </children>
-                        </Pane>
-                        <Separator prefWidth="200.0" />
-                        <HBox alignment="CENTER">
-                           <children>
-                              <Button fx:id="buttonResetGame" mnemonicParsing="false" text="Reset game">
+                              <Text strokeType="OUTSIDE" strokeWidth="0.0" text="White:">
                                  <font>
-                                    <Font name="Lucida Console" size="14.0" />
+                                    <Font name="Lucida Console" size="20.0" />
                                  </font>
-                              </Button>
+                              </Text>
+                              <Text fx:id="textCronometroWhite" strokeType="OUTSIDE" strokeWidth="0.0" text="00:00:00.00">
+                                 <font>
+                                    <Font name="Lucida Console" size="20.0" />
+                                 </font>
+                              </Text>
                            </children>
-                        </HBox>
-                     </children>
-                  </VBox>
-                  <Separator orientation="VERTICAL" HBox.hgrow="ALWAYS" />
-               </children>
-            </HBox>
-            <VBox spacing="100.0" GridPane.columnIndex="2">
-               <children>
-                  <VBox>
-                     <children>
-                        <Text strokeType="OUTSIDE" strokeWidth="0.0" text="White;">
-                           <font>
-                              <Font name="Lucida Console" size="20.0" />
-                           </font>
-                        </Text>
-                        <Text fx:id="textCronometroWhite" strokeType="OUTSIDE" strokeWidth="0.0" text="00:00:00.00">
-                           <font>
-                              <Font name="Lucida Console" size="20.0" />
-                           </font>
-                        </Text>
-                     </children>
-                  </VBox>
-                  <VBox>
-                     <children>
-                        <Text strokeType="OUTSIDE" strokeWidth="0.0" text="Captured pieces">
-                           <font>
-                              <Font name="Lucida Console" size="18.0" />
-                           </font>
-                        </Text>
-                        <FlowPane fx:id="flowPaneWhiteCapturedPieces" />
+                        </VBox>
+                        <VBox alignment="TOP_CENTER">
+                           <children>
+                              <Text strokeType="OUTSIDE" strokeWidth="0.0" text="Captured pieces">
+                                 <font>
+                                    <Font name="Lucida Console" size="18.0" />
+                                 </font>
+                              </Text>
+                              <FlowPane fx:id="flowPaneWhiteCapturedPieces" />
+                           </children>
+                        </VBox>
                      </children>
                   </VBox>
                </children>
-            </VBox>
+            </GridPane>
          </children>
-      </GridPane>
-      <Text fx:id="textErrorMessage" strokeType="OUTSIDE" strokeWidth="0.0" text="teste">
+         <VBox.margin>
+            <Insets bottom="10.0" left="10.0" right="10.0" top="10.0" />
+         </VBox.margin>
+      </VBox>
+      <Text fx:id="textErrorMessage" strokeType="OUTSIDE" strokeWidth="0.0">
          <font>
             <Font name="Lucida Console" size="16.0" />
          </font>
       </Text>
    </children>
-   <padding>
-      <Insets bottom="10.0" left="10.0" right="10.0" top="10.0" />
-   </padding>
 </VBox>
