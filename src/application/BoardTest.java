@@ -8,9 +8,8 @@ import enums.PieceColor;
 import enums.PieceType;
 import piece.Piece;
 import piece.PiecePosition;
-import util.MyFiles;
 
-public class Teste {
+public class BoardTest {
 	
 	private static Board board;
 	
@@ -23,11 +22,11 @@ public class Teste {
 				{'k',' ',' ',' ',' ',' ',' ',' '},
 				{' ',' ',' ',' ',' ',' ',' ',' '},
 				{' ',' ',' ',' ',' ',' ',' ',' '},
-				{'r',' ','R',' ',' ',' ',' ',' '},
-				{' ',' ',' ','P',' ',' ',' ',' '},
+				{' ',' ','p',' ',' ',' ',' ',' '},
+				{' ',' ',' ','p','p',' ',' ',' '},
+				{' ',' ',' ',' ','P',' ',' ',' '},
 				{' ',' ',' ',' ',' ',' ',' ',' '},
-				{' ',' ',' ',' ',' ',' ','P','P'},
-				{' ',' ',' ',' ',' ',' ','R','K'}
+				{' ',' ',' ',' ',' ',' ',' ','K'}
 			};
 			Piece[][] b = new Piece[8][8];
 			try
@@ -43,10 +42,14 @@ public class Teste {
 			try { board.getChessAI().doCpuMoveSelectedPiece(); } catch (Exception e) {}
 			
 			System.out.println();
-			for (int y = 0; y < 8; y++) {
+			for (int y = -1; y < 8; y++) {
 				for (int z = 0; z < 2; z++) {
-					for (int x = 0; x < 8; x++) {
-						if (z == 0)
+					for (int x = -1; x < 8; x++) {
+						if (x == -1)
+							System.out.print((y == -1 ? " " : (8 - y)) + " ");
+						else if (y == -1)
+							System.out.print(" " + new char[]{'a','b','c','d','e','f','g','h'}[x] + " ");
+						else if (z == 0)
 							System.out.print(qt(b[y][x]));
 						else {
 							Piece piece = board.getPieceAt(new PiecePosition(y,x));

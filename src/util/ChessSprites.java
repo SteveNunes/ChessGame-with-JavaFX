@@ -80,7 +80,7 @@ public class ChessSprites {
 	public static Image getBoardTileImage(int boardType, int row, int column, int width, int height) {
 		initialize();
 		Canvas canvas = new Canvas(width, height);
-		canvas.getGraphicsContext2D().drawImage(boardTilesImages.get(boardType), 0, 0, 150, 150, 0, 0, width, height);
+		canvas.getGraphicsContext2D().drawImage(boardTilesImages.get(boardType), column * 150, row * 150, 150, 150, 0, 0, width, height);
 		return canvasToImage(canvas);
 	}
 

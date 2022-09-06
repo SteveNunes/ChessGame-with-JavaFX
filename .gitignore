@@ -31,3 +31,5 @@ hs_err_pid*
 *.txt
 *.bat
 *.lnk
+*.ini
+*test*.*

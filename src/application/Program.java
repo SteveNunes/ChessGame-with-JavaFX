@@ -17,6 +17,7 @@ public class Program extends Application {
 	private static Class<? extends Program> mainClass;
 	private static Scene mainScene;
 	private static Stage mainStage;
+	private static BoardController boardController;
 	private static List<Stage> stageList = new ArrayList<>();
 	
 	public static Class<? extends Program> getMainClass()
@@ -55,9 +56,9 @@ public class Program extends Application {
 			stage.setScene(mainScene);
 			stage.setResizable(false);
 			stage.setTitle("Chess Game");
-			BoardController controller = loader.getController();
+			boardController = loader.getController();
 			stage.show();
-			controller.init();
+			boardController.init();
 		}
 		catch (Exception e) {
 			e.printStackTrace();
@@ -67,6 +68,7 @@ public class Program extends Application {
 	
 	public static void main(String[] args) {
 		launch(args);
+		boardController.saveConfigsToDisk();
 	}
 
 	public static void showAndWait(Stage stage) {
