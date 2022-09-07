@@ -825,6 +825,7 @@ public class BoardController implements Initializable {
 			soundEnabled = true;
 			chessPlayMode = ChessPlayMode.PLAYER_VS_PLAYER;
 			cpuColor = PieceColor.BLACK;
+			menuCheckItemHoverBlink.setSelected(true);
 		}
 	}
 
