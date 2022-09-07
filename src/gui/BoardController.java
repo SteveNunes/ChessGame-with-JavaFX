@@ -183,7 +183,7 @@ public class BoardController implements Initializable {
 			CheckMenuItem checkMenuItem = new CheckMenuItem();
 			checkMenuItem.setSelected(maxPieceSprites == piecePngType);
 			PieceImage pi = ChessSprites.pieceImages.get(maxPieceSprites);
-			checkMenuItem.setGraphic(ChessSprites.getPieceImage(PieceType.PAWN, PieceColor.WHITE, maxPieceSprites, pi.getTargetW(), pi.getTargetH()));
+			checkMenuItem.setGraphic(ChessSprites.getPieceImage(PieceType.PAWN, PieceColor.WHITE, maxPieceSprites, pi.getTargetW() / 2, pi.getTargetH() / 2));
 			final int n = maxPieceSprites;
 			checkMenuItem.setOnAction(e -> setPieceSprite(n));
 			menuPieceSprite.getItems().add(checkMenuItem);
