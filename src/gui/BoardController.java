@@ -22,7 +22,6 @@ import javafx.fxml.Initializable;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Group;
-import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
@@ -55,6 +54,7 @@ public class BoardController implements Initializable {
 	private Boolean soundEnabled;
 	private Boolean blinkRectangle;
 	private Boolean tryCatchOnConsole = false;
+	private Boolean gameOver;
 	private Cronometro cronometroGame;
 	private Cronometro cronometroBlack;
 	private Cronometro cronometroWhite;
@@ -144,6 +144,7 @@ public class BoardController implements Initializable {
 		cronoTurn = null;
 		unknownError = false;
 		blinkRectangle = false;
+		gameOver = false;
 		pressedKeys = new ArrayList<>();
 		mouseHoverPos = new PiecePosition(0, 0);
 		pieceTravel = new PieceTravel();
@@ -384,8 +385,10 @@ public class BoardController implements Initializable {
 			buttonRedo.setDisable(true);
 			resumirCronometro(null);
 			hoveredPiece = null;
+			gameOver = false;
 			cpuPlay = 0;
 			cpuPlay();
+			boardTimer();
 		}
 		catch (Exception e) {
 			Program.getMainStage().close();
@@ -455,7 +458,7 @@ public class BoardController implements Initializable {
 			}
 		}
 		fpsHandler.fpsCounter();
-		if (Program.windowIsOpen())
+		if (Program.windowIsOpen() && !gameOver)
 			GameTools.callMethodAgain(e -> boardTimer());
 	}
 
@@ -518,15 +521,25 @@ public class BoardController implements Initializable {
 	}
 
 	private void setPiecesOnTheBoard() throws Exception {
+//		board.setBoard(new Character[][] {
+//			{'r','n','b','q','k','b','n','r'},
+//			{'p','p','p','p','p','p','p','p'},
+//			{' ',' ',' ',' ',' ',' ',' ',' '},
+//			{' ',' ',' ',' ',' ',' ',' ',' '},
+//			{' ',' ',' ',' ',' ',' ',' ',' '},
+//			{' ',' ',' ',' ',' ',' ',' ',' '},
+//			{'P','P','P','P','P','P','P','P'},
+//			{'R','N','B','Q','K','B','N','R'}
+//		});
 		board.setBoard(new Character[][] {
-			{'r','n','b','q','k','b','n','r'},
-			{'p','p','p','p','p','p','p','p'},
+			{'k',' ',' ',' ',' ',' ','p','p'},
 			{' ',' ',' ',' ',' ',' ',' ',' '},
 			{' ',' ',' ',' ',' ',' ',' ',' '},
 			{' ',' ',' ',' ',' ',' ',' ',' '},
+			{'R',' ','R',' ',' ',' ',' ',' '},
 			{' ',' ',' ',' ',' ',' ',' ',' '},
-			{'P','P','P','P','P','P','P','P'},
-			{'R','N','B','Q','K','B','N','R'}
+			{' ',' ',' ',' ',' ',' ',' ',' '},
+			{' ',' ',' ',' ',' ',' ',' ','K'}
 		});
 	}
 	
@@ -734,6 +747,7 @@ public class BoardController implements Initializable {
 			cronometroWhite.setPausado(true);
 			cronometroGame.setPausado(true);
 			msg("Checkmate! " + (won ? board.getWinnerColor().name() + " won!" : "You loose"), Color.BLUE);
+			gameOver = true;
 		}
 		else {
 			playWav("loose");
@@ -748,6 +762,7 @@ public class BoardController implements Initializable {
 				msg("Draw game (Threefold-repetition)", Color.RED);
 			else
 				msg("Draw game", Color.RED);
+			gameOver = true;
 		}
 		return true;
 	}
