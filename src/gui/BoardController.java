@@ -138,7 +138,6 @@ public class BoardController implements Initializable {
   @FXML
   private Menu menuMovingPieceDelay;
 
-
 	@Override
 	public void initialize(URL url, ResourceBundle rb) {
 		cronoTurn = null;
@@ -160,6 +159,19 @@ public class BoardController implements Initializable {
 		Controller.addIconToButton(buttonRedo, Icons.ICON_MOVEMAXRIGHT.getValue(), 18, 18, 20);
 	}
 	
+	private void setPiecesOnTheBoard() throws Exception {
+		board.setBoard(new Character[][] {
+			{'r','n','b','q','k','b','n','r'},
+			{'p','p','p','p','p','p','p','p'},
+			{' ',' ',' ',' ',' ',' ',' ',' '},
+			{' ',' ',' ',' ',' ',' ',' ',' '},
+			{' ',' ',' ',' ',' ',' ',' ',' '},
+			{' ',' ',' ',' ',' ',' ',' ',' '},
+			{'P','P','P','P','P','P','P','P'},
+			{'R','N','B','Q','K','B','N','R'}
+		});
+	}
+
 	private void addListeners() {
 		buttonUndo.setOnAction(e -> {
 			board.undoMove();
@@ -518,29 +530,6 @@ public class BoardController implements Initializable {
 		flowPaneBlackCapturedPieces.getChildren().clear();
 		for (Piece piece : board.sortPieceListByPieceValue(board.getCapturedWhitePieces()))
 			flowPaneBlackCapturedPieces.getChildren().add(ChessSprites.getPieceImage(piece, piecePngType, 32, 64));
-	}
-
-	private void setPiecesOnTheBoard() throws Exception {
-//		board.setBoard(new Character[][] {
-//			{'r','n','b','q','k','b','n','r'},
-//			{'p','p','p','p','p','p','p','p'},
-//			{' ',' ',' ',' ',' ',' ',' ',' '},
-//			{' ',' ',' ',' ',' ',' ',' ',' '},
-//			{' ',' ',' ',' ',' ',' ',' ',' '},
-//			{' ',' ',' ',' ',' ',' ',' ',' '},
-//			{'P','P','P','P','P','P','P','P'},
-//			{'R','N','B','Q','K','B','N','R'}
-//		});
-		board.setBoard(new Character[][] {
-			{'k',' ',' ',' ',' ',' ','p','p'},
-			{' ',' ',' ',' ',' ',' ',' ',' '},
-			{' ',' ',' ',' ',' ',' ',' ',' '},
-			{' ',' ',' ',' ',' ',' ',' ',' '},
-			{'R',' ','R',' ',' ',' ',' ',' '},
-			{' ',' ',' ',' ',' ',' ',' ',' '},
-			{' ',' ',' ',' ',' ',' ',' ',' '},
-			{' ',' ',' ',' ',' ',' ',' ','K'}
-		});
 	}
 	
 	private void playWav(String wav) {
