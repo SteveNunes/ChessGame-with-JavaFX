@@ -7,8 +7,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.ResourceBundle;
 
-import javax.swing.plaf.nimbus.NimbusLookAndFeel;
-
 import application.Program;
 import board.Board;
 import entities.PieceImage;
@@ -18,6 +16,7 @@ import enums.PieceColor;
 import enums.PieceType;
 import gameutil.FPSHandler;
 import gameutil.GameTools;
+import gameutil.Position;
 import gui.util.Controller;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
@@ -45,7 +44,6 @@ import javafx.scene.text.TextAlignment;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 import piece.Piece;
-import piece.PiecePosition;
 import util.Alerts;
 import util.ChessSprites;
 import util.Cronometro;
@@ -68,7 +66,7 @@ public class BoardController implements Initializable {
 	private PieceTravel pieceTravel;
 	private PieceColor cronoTurn;
 	private PieceColor cpuColor;
-	private PiecePosition mouseHoverPos;
+	private Position mouseHoverPos;
 	private ChessPlayMode chessPlayMode;
 	private FPSHandler fpsHandler;
 	private Board board;
@@ -153,7 +151,7 @@ public class BoardController implements Initializable {
 		gameOver = false;
 		boardTimerIsRunning = false;
 		pressedKeys = new ArrayList<>();
-		mouseHoverPos = new PiecePosition(0, 0);
+		mouseHoverPos = new Position(0, 0);
 		pieceTravel = new PieceTravel();
 		travelingPiece = null;
 		clearMsg = 0;
@@ -565,7 +563,7 @@ public class BoardController implements Initializable {
 	}
 	
 	private void drawTile(int x, int y) {
-		PiecePosition pos = new PiecePosition(y, x);
+		Position pos = new Position(x, y);
 
 		Color rectangleColor = null;
 		Piece piece = board.getPieceAt(pos);
@@ -613,9 +611,9 @@ public class BoardController implements Initializable {
 	
 	private void canvasBoardMoved(int row, int column) {
     if (!pieceTravel.isActive() && !unknownError && !board.isGameOver() && !board.isCpuTurn()) {
-	  	PiecePosition position = new PiecePosition(row - 1, column);
+	  	Position position = new Position(column, row - 1);
 			if (!mouseHoverPos.equals(position)) {
-				mouseHoverPos.setValues(position);
+				mouseHoverPos.setPosition(position);
 				boardMouseHover(board.getPieceAt(position), position);
 			}
     }
@@ -623,12 +621,12 @@ public class BoardController implements Initializable {
 
 	private void canvasBoardClicked(int row, int column) {
     if (!pieceTravel.isActive() && !unknownError && !board.isGameOver() && !board.isCpuTurn()) {
-    	PiecePosition position = new PiecePosition(row - 1, column);
+    	Position position = new Position(column, row - 1);
     	boardClick(board.getPieceAt(position), position);
     }		
 	}
 
-	private void boardMouseHover(Piece piece, PiecePosition pos) {
+	private void boardMouseHover(Piece piece, Position pos) {
     if (!board.pieceIsSelected() && (hoveredPiece == null || piece != hoveredPiece)) {
 			if (piece != null)
   			hoveredPiece = piece;
@@ -637,12 +635,12 @@ public class BoardController implements Initializable {
 			updateBoard();
     }
     if (mouseHoverPos == null || !mouseHoverPos.equals(pos)) {
-			mouseHoverPos = new PiecePosition(pos);
+			mouseHoverPos = new Position(pos);
 			updateBoard();
     }
 	}
 
-	private void boardClick(Piece piece, PiecePosition pos) {
+	private void boardClick(Piece piece, Position pos) {
   	if (board.isGameOver())
   		return;
   	msg("");
@@ -678,7 +676,7 @@ public class BoardController implements Initializable {
 	  checkIfPieceIsPromoted();
 	}
 
-	private void startPieceTravel(PiecePosition targetPosition) {
+	private void startPieceTravel(Position targetPosition) {
 		travelingPiece = board.getSelectedPiece();
 		pieceTravel.setTravel(travelingPiece.getPosition(), targetPosition, movePieceDelay);
 		playWav("clicked");
@@ -686,7 +684,7 @@ public class BoardController implements Initializable {
 		updateBoard();
 	}
 
-	private void movePieceTo(PiecePosition pos) {
+	private void movePieceTo(Position pos) {
 		if (pieceTravel.isActive())
 			return;
 		Boolean wasCheckedBefore = board.isChecked();
@@ -776,7 +774,7 @@ public class BoardController implements Initializable {
 		return true;
 	}
 
-	private void pieceWasUnselected(PiecePosition position) {
+	private void pieceWasUnselected(Position position) {
 		try {
 			board.cancelSelection();
 			if (position != null)
@@ -962,8 +960,8 @@ class PieceTravel {
 		isActive = true;
 	}
 	
-	public void setTravel(PiecePosition sourcePosition, PiecePosition targetPosition, int frames)
-		{ setTravel(sourcePosition.getColumn() * 64, sourcePosition.getRow() * 64, targetPosition.getColumn() * 64, targetPosition.getRow() * 64, frames); }
+	public void setTravel(Position sourcePosition, Position targetPosition, int frames)
+		{ setTravel(sourcePosition.getX() * 64, sourcePosition.getY() * 64, targetPosition.getX() * 64, targetPosition.getY() * 64, frames); }
 	
 	public Boolean incPos() {
 		sourceX += incX;
@@ -991,14 +989,14 @@ class PieceTravel {
 	public double getTargetY()
 		{ return targetY; }	
 
-	public PiecePosition getSourcePosition()
-		{ return new PiecePosition((int)initialY / 64, (int)initialX / 64); }
+	public Position getSourcePosition()
+		{ return new Position((int)initialX / 64, (int)initialY / 64); }
 	
-	public PiecePosition getCurrentPosition()
-		{ return new PiecePosition((int)sourceY / 64, (int)sourceX / 64); }
+	public Position getCurrentPosition()
+		{ return new Position((int)sourceX / 64, (int)sourceY / 64); }
 	
-	public PiecePosition getTargetPosition()
-		{ return new PiecePosition((int)targetY / 64, (int)targetX / 64); }
+	public Position getTargetPosition()
+		{ return new Position((int)targetX / 64, (int)targetY / 64); }
 	
 	public Boolean isActive()
 		{ return isActive; }

@@ -6,8 +6,8 @@ import board.Board;
 import enums.ChessPlayMode;
 import enums.PieceColor;
 import enums.PieceType;
+import gameutil.Position;
 import piece.Piece;
-import piece.PiecePosition;
 
 public class BoardTest {
 	
@@ -37,7 +37,7 @@ public class BoardTest {
 			board.getChessAI().doCpuSelectAPiece();
 			for (int y = 0; y < 8; y++)
 				for (int x = 0; x < 8; x++)
-						b[y][x] = board.getPieceAt(new PiecePosition(y, x));
+						b[y][x] = board.getPieceAt(new Position(y, x));
 						
 			try { board.getChessAI().doCpuMoveSelectedPiece(); } catch (Exception e) {}
 			
@@ -52,7 +52,7 @@ public class BoardTest {
 						else if (z == 0)
 							System.out.print(qt(b[y][x]));
 						else {
-							Piece piece = board.getPieceAt(new PiecePosition(y,x));
+							Piece piece = board.getPieceAt(new Position(y,x));
 							System.out.print(qt(piece));
 						}
 					}
