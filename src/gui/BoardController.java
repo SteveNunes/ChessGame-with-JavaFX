@@ -67,6 +67,7 @@ public class BoardController implements Initializable {
 	private PieceColor cpuColor;
 	private Board board;
 	private long cpuPlay;
+	private long clearMsg;
 	private int cpuPlaySpeed;
 	private int piecePngType;
 	private int boardPngTypeA;
@@ -143,6 +144,7 @@ public class BoardController implements Initializable {
 		mouseHoverPos = new PiecePosition(0, 0);
 		pieceTravel = new PieceTravel();
 		travelingPiece = null;
+		clearMsg = 0;
 		loadConfigsFromDisk();
 		
 		ChessSprites.initialize();
@@ -392,6 +394,10 @@ public class BoardController implements Initializable {
 	}
 
 	private void boardTimer() {
+		if (clearMsg != 0 && System.currentTimeMillis() >= clearMsg) {
+			clearMsg = 0;
+			msg("");
+		}
 		if (pieceTravel.isActive()) {
 			if (!pieceTravel.incPos()) {
 				canvasMovePiece.getGraphicsContext2D().clearRect(0, 0, 512, 576);
@@ -458,6 +464,7 @@ public class BoardController implements Initializable {
     gc.setTextAlign(TextAlignment.CENTER);
     gc.setFont(Font.font("Lucida Console", 20));
     gc.fillText(text, canvasMovePiece.getWidth() / 2, 35);
+    clearMsg = System.currentTimeMillis() + 3000;
 	}
 	
 	private void msg(String text)
@@ -605,6 +612,8 @@ public class BoardController implements Initializable {
     			pieceWasUnselected();
     		else if (board.getPieceAt(pos) != null && board.getSelectedPiece().isSameColorOf(board.getPieceAt(pos)))
     			pieceWasUnselected(pos);
+    		else if (!board.checkIfCanMovePieceTo(pos))
+    			board.movePieceTo(pos);
     		else 
     			startPieceTravel(pos);
     	}
@@ -625,10 +634,10 @@ public class BoardController implements Initializable {
 
 	private void startPieceTravel(PiecePosition targetPosition) {
 		travelingPiece = board.getSelectedPiece();
-		pieceTravel.setTravel(travelingPiece.getPosition(), targetPosition, 20);
+		pieceTravel.setTravel(travelingPiece.getPosition(), targetPosition, 40);
 		playWav("clicked");
 		updateBoard();
-		initTimer(10);
+		initTimer(5);
 	}
 
 	private void movePieceTo(PiecePosition pos) {
