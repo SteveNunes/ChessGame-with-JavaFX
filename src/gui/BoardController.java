@@ -14,15 +14,15 @@ import enums.ChessPlayMode;
 import enums.Icons;
 import enums.PieceColor;
 import enums.PieceType;
+import gameutil.FPSHandler;
+import gameutil.GameTools;
 import gui.util.Controller;
-import javafx.animation.Animation;
-import javafx.animation.KeyFrame;
-import javafx.animation.Timeline;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Group;
+import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
@@ -41,7 +41,6 @@ import javafx.scene.text.Text;
 import javafx.scene.text.TextAlignment;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
-import javafx.util.Duration;
 import piece.Piece;
 import piece.PiecePosition;
 import util.Alerts;
@@ -55,6 +54,7 @@ public class BoardController implements Initializable {
 	private Boolean unknownError;
 	private Boolean soundEnabled;
 	private Boolean blinkRectangle;
+	private Boolean tryCatchOnConsole = false;
 	private Cronometro cronometroGame;
 	private Cronometro cronometroBlack;
 	private Cronometro cronometroWhite;
@@ -62,10 +62,13 @@ public class BoardController implements Initializable {
 	private Piece travelingPiece;
 	private PieceTravel pieceTravel;
 	private PieceColor cronoTurn;
+	private PieceColor cpuColor;
 	private PiecePosition mouseHoverPos;
 	private ChessPlayMode chessPlayMode;
-	private PieceColor cpuColor;
+	private FPSHandler fpsHandler;
 	private Board board;
+	private List<KeyCode> pressedKeys;
+
 	private long cpuPlay;
 	private long clearMsg;
 	private int cpuPlaySpeed;
@@ -74,8 +77,7 @@ public class BoardController implements Initializable {
 	private int boardPngTypeB;
 	private int maxBoardsSprites;
 	private int maxPieceSprites;
-	private List<KeyCode> pressedKeys;
-	private Timeline timeline;
+	private int movePieceDelay;
 	
 	@FXML
 	private VBox vBoxMainWindow;
@@ -133,6 +135,8 @@ public class BoardController implements Initializable {
   private CheckMenuItem menuCheckItemHoverBlink;
   @FXML
   private CheckMenuItem menuCheckItemHoverLift;
+  @FXML
+  private Menu menuMovingPieceDelay;
 
 
 	@Override
@@ -145,6 +149,7 @@ public class BoardController implements Initializable {
 		pieceTravel = new PieceTravel();
 		travelingPiece = null;
 		clearMsg = 0;
+		fpsHandler = new FPSHandler(60, 0);
 		loadConfigsFromDisk();
 		
 		ChessSprites.initialize();
@@ -181,6 +186,17 @@ public class BoardController implements Initializable {
 			menuCheckItemHoverLift.setSelected(menuCheckItemHoverBlink.isSelected()));
 		menuCheckItemHoverLift.setOnAction(e ->
 		menuCheckItemHoverBlink.setSelected(menuCheckItemHoverLift.isSelected()));
+		for (int n = 10; n <= 60; n += 10) {
+			CheckMenuItem checkMenuItem = new CheckMenuItem("" + n + " frames");
+			final int x = n;
+			checkMenuItem.setOnAction(e -> {
+				movePieceDelay = x;
+				for (int n2 = 0; n2 < menuMovingPieceDelay.getItems().size(); n2++)
+					((CheckMenuItem) menuMovingPieceDelay.getItems().get(n2)).setSelected(movePieceDelay == n2);
+			});
+			checkMenuItem.setSelected(movePieceDelay == n);
+			menuMovingPieceDelay.getItems().add(checkMenuItem);
+		}
 		ChessSprites.pieceImages.forEach(i -> {
 			CheckMenuItem checkMenuItem = new CheckMenuItem();
 			checkMenuItem.setSelected(maxPieceSprites == piecePngType);
@@ -341,7 +357,7 @@ public class BoardController implements Initializable {
 	public void init() {
 		board = new Board();
 		resumirCronometro(null);
-	  initTimer(50);
+	  boardTimer();
 		resetGame();
 	}
 	
@@ -374,7 +390,10 @@ public class BoardController implements Initializable {
 		catch (Exception e) {
 			Program.getMainStage().close();
 			Alerts.error("Erro", e.getMessage());
-			e.printStackTrace();
+			if (tryCatchOnConsole) {
+				System.err.println("Error on catch 001");
+				e.printStackTrace();
+			}
 		}
 	}
 
@@ -382,15 +401,6 @@ public class BoardController implements Initializable {
 		if (board.isCpuTurn() && cpuPlay == 0)
 			cpuPlay = System.currentTimeMillis() + (long)cpuPlaySpeed;
 	  updateBoard();
-	}
-
-	private void initTimer(long durationMillis) {
-		if (timeline != null)
-			timeline.stop();
-		timeline = new Timeline(new KeyFrame(Duration.millis(durationMillis), e -> boardTimer()));
-    timeline.setCycleCount(Animation.INDEFINITE);
-    timeline.play();
-		boardTimer();
 	}
 
 	private void boardTimer() {
@@ -402,7 +412,6 @@ public class BoardController implements Initializable {
 			if (!pieceTravel.incPos()) {
 				canvasMovePiece.getGraphicsContext2D().clearRect(0, 0, 512, 576);
 				movePieceTo(pieceTravel.getTargetPosition());
-				initTimer(50);
 			}
 			else {
 				PieceImage pieceImage = ChessSprites.pieceImages.get(piecePngType);
@@ -434,7 +443,10 @@ public class BoardController implements Initializable {
 				catch (Exception e) {
 	    		playWav("error");
 					msg(e.getMessage(), Color.RED);
-					e.printStackTrace();
+					if (tryCatchOnConsole) {
+						System.err.println("Error on catch 002");
+						e.printStackTrace();
+					}
 					cronometroBlack.setPausado(true);
 					cronometroWhite.setPausado(true);
 					cronometroGame.setPausado(true);
@@ -442,6 +454,9 @@ public class BoardController implements Initializable {
 				}
 			}
 		}
+		fpsHandler.fpsCounter();
+		if (Program.windowIsOpen())
+			GameTools.callMethodAgain(e -> boardTimer());
 	}
 
 	private void checkUndoButtons() {
@@ -519,7 +534,12 @@ public class BoardController implements Initializable {
 		if (soundEnabled)
 			try
 				{ Sounds.playWav("./src/sounds/" + wav + ".wav"); }
-			catch (Exception e) {}
+			catch (Exception e) {
+				if (tryCatchOnConsole) {
+					System.err.println("Error on catch 003");
+					e.printStackTrace();
+				}
+			}
 	}
 	
 	private void drawTile(int x, int y) {
@@ -558,8 +578,9 @@ public class BoardController implements Initializable {
 				gc.strokeRect(x * 64 + n, y * 64 + 64 + n, 64 - n * 2, 64 - n * 2);
 		}
 
-		if (menuCheckItemHoverBlink.isSelected() && piece != null && selectedPiece == piece)
-			blinkRectangle = !blinkRectangle;
+		if (menuCheckItemHoverBlink.isSelected() && piece != null &&
+				selectedPiece == piece && fpsHandler.getElapsedFrames() / 2 % 2 == 0)
+					blinkRectangle = !blinkRectangle;
 		if (piece != null && (!pieceTravel.isActive() || piece != travelingPiece) &&
 				(selectedPiece != piece || menuCheckItemHoverLift.isSelected() || piece.getColor() != board.getCurrentColorTurn() || !blinkRectangle)) {
 					int[] p = ChessSprites.getXYFromPieceInfo(piece, piecePngType);
@@ -627,6 +648,10 @@ public class BoardController implements Initializable {
 		catch (Exception ex) {
   		playWav("error");
   		msg(ex.getMessage(), Color.RED);
+			if (tryCatchOnConsole) {
+				System.err.println("Error on catch 004");
+				ex.printStackTrace();
+			}
 		}
 	  updateBoard();
 	  checkIfPieceIsPromoted();
@@ -634,10 +659,9 @@ public class BoardController implements Initializable {
 
 	private void startPieceTravel(PiecePosition targetPosition) {
 		travelingPiece = board.getSelectedPiece();
-		pieceTravel.setTravel(travelingPiece.getPosition(), targetPosition, 40);
+		pieceTravel.setTravel(travelingPiece.getPosition(), targetPosition, movePieceDelay);
 		playWav("clicked");
 		updateBoard();
-		initTimer(5);
 	}
 
 	private void movePieceTo(PiecePosition pos) {
@@ -654,7 +678,12 @@ public class BoardController implements Initializable {
 				if (board.pawnWasPromoted()) {
 					try
 						{ board.promotePawnTo(PieceType.QUEEN); }
-					catch (Exception e) {}
+					catch (Exception e) {
+						if (tryCatchOnConsole) {
+							System.err.println("Error on catch 005");
+							e.printStackTrace();
+						}
+					}
 	    		playWav("promotion");
 	  			cpuPlay = System.currentTimeMillis() + (long)cpuPlaySpeed;
 					updateBoard();
@@ -664,6 +693,10 @@ public class BoardController implements Initializable {
 		catch (Exception e) {
   		playWav("error");
 			msg(e.getMessage(), Color.RED);
+			if (tryCatchOnConsole) {
+				System.err.println("Error on catch 006");
+				e.printStackTrace();
+			}
 			return;
 		}
 		cpuPlay = 0;
@@ -730,6 +763,10 @@ public class BoardController implements Initializable {
 		catch (Exception e) {
   		playWav("error");
 			msg(e.getMessage(), Color.RED);
+			if (tryCatchOnConsole) {
+				System.err.println("Error on catch 007");
+				e.printStackTrace();
+			}
 		}
 	}
 	
@@ -798,7 +835,12 @@ public class BoardController implements Initializable {
 			button.setOnAction(e -> {
 				try
 					{ board.promotePawnTo(type); }
-				catch (Exception ex) {}
+				catch (Exception ex) {
+					if (tryCatchOnConsole) {
+						System.err.println("Error on catch 008");
+						ex.printStackTrace();
+					}
+				}
 				stage.close();
     		playWav("promotion");
     		if (board.isCpuTurn())
@@ -816,7 +858,7 @@ public class BoardController implements Initializable {
 	public void loadConfigsFromDisk() {
 		try {
 			IniFile ini = IniFile.getNewIniFileInstance("./config.ini");
-			piecePngType = Integer.parseInt(ini.read("CONFIG", "piecePngType"));
+			movePieceDelay = Integer.parseInt(ini.read("CONFIG", "movePieceDelay"));
 			boardPngTypeA = Integer.parseInt(ini.read("CONFIG", "boardPngTypeA"));
 			boardPngTypeB = Integer.parseInt(ini.read("CONFIG", "boardPngTypeB"));
 			cpuPlaySpeed = Integer.parseInt(ini.read("CONFIG", "cpuPlaySpeed"));
@@ -827,6 +869,7 @@ public class BoardController implements Initializable {
 			menuCheckItemHoverLift.setSelected(ini.read("CONFIG", "hoverPieceMode").equals("2"));
 		}
 		catch (Exception e) {
+			movePieceDelay = 20;
 			piecePngType = 0;
 			boardPngTypeA = 0;
 			boardPngTypeB = 0;
@@ -835,6 +878,10 @@ public class BoardController implements Initializable {
 			chessPlayMode = ChessPlayMode.PLAYER_VS_PLAYER;
 			cpuColor = PieceColor.BLACK;
 			menuCheckItemHoverBlink.setSelected(true);
+			if (tryCatchOnConsole) {
+				System.err.println("Error on catch 009");
+				e.printStackTrace();
+			}
 		}
 	}
 
@@ -848,10 +895,16 @@ public class BoardController implements Initializable {
 			ini.write("CONFIG", "soundEnabled", "" + soundEnabled);
 			ini.write("CONFIG", "chessPlayMode", chessPlayMode.name());
 			ini.write("CONFIG", "cpuColor", cpuColor.name());
+			ini.write("CONFIG", "movePieceDelay", "" + movePieceDelay);
 			ini.write("CONFIG", "hoverPieceMode", menuCheckItemHoverBlink.isSelected() ? "1" : "2");
 			ini.saveToDisk();
 		}
-		catch (Exception e) {}
+		catch (Exception e) {
+			if (tryCatchOnConsole) {
+				System.err.println("Error on catch 010");
+				e.printStackTrace();
+			}
+		}
 	}	
 
 }

@@ -27,6 +27,7 @@
             <items>
                   <Menu fx:id="menuGameMode" mnemonicParsing="false" text="Game mode" />
                   <SeparatorMenuItem mnemonicParsing="false" />
+                  <Menu fx:id="menuMovingPieceDelay" mnemonicParsing="false" text="Moving piece delay" />
                   <Menu fx:id="menuCpuSpeed" mnemonicParsing="false" text="CPU action speed" />
                   <SeparatorMenuItem mnemonicParsing="false" />
                   <Menu mnemonicParsing="false" text="Board sprites">

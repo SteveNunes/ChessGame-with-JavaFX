@@ -19,6 +19,8 @@ public class Program extends Application {
 	private static Stage mainStage;
 	private static BoardController boardController;
 	private static List<Stage> stageList = new ArrayList<>();
+	private static Boolean windowIsOpen = false; 
+
 	
 	public static Class<? extends Program> getMainClass()
 		{ return mainClass; }
@@ -56,8 +58,10 @@ public class Program extends Application {
 			stage.setScene(mainScene);
 			stage.setResizable(false);
 			stage.setTitle("Chess Game");
-			boardController = loader.getController();
+			stage.setOnCloseRequest(e -> windowIsOpen = false);
+;			boardController = loader.getController();
 			stage.show();
+			windowIsOpen = true;
 			boardController.init();
 		}
 		catch (Exception e) {
@@ -65,6 +69,9 @@ public class Program extends Application {
 			Alerts.exception("Erro", "Erro ao iniciar o programa", e.getMessage(), e);
 		}
 	}
+	
+	public static Boolean windowIsOpen()
+		{ return windowIsOpen; }
 	
 	public static void main(String[] args) {
 		launch(args);
