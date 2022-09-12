@@ -7,6 +7,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.ResourceBundle;
 
+import javax.swing.plaf.nimbus.NimbusLookAndFeel;
+
 import application.Program;
 import board.Board;
 import entities.PieceImage;
@@ -29,6 +31,8 @@ import javafx.scene.control.Button;
 import javafx.scene.control.CheckMenuItem;
 import javafx.scene.control.Menu;
 import javafx.scene.control.MenuItem;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.FlowPane;
@@ -52,9 +56,10 @@ public class BoardController implements Initializable {
 
 	private Boolean unknownError;
 	private Boolean soundEnabled;
-	private Boolean blinkRectangle;
+	private Boolean blinkPiece;
 	private Boolean tryCatchOnConsole = false;
 	private Boolean gameOver;
+	private Boolean boardTimerIsRunning;
 	private Cronometro cronometroGame;
 	private Cronometro cronometroBlack;
 	private Cronometro cronometroWhite;
@@ -103,6 +108,8 @@ public class BoardController implements Initializable {
 	private Canvas canvasBoard;
   @FXML
 	private Canvas canvasMovePiece;
+  @FXML
+  private ImageView imageViewBoardFrame;
 	@FXML
 	private Canvas canvasTurn;
 	@FXML
@@ -142,14 +149,15 @@ public class BoardController implements Initializable {
 	public void initialize(URL url, ResourceBundle rb) {
 		cronoTurn = null;
 		unknownError = false;
-		blinkRectangle = false;
+		blinkPiece = false;
 		gameOver = false;
+		boardTimerIsRunning = false;
 		pressedKeys = new ArrayList<>();
 		mouseHoverPos = new PiecePosition(0, 0);
 		pieceTravel = new PieceTravel();
 		travelingPiece = null;
 		clearMsg = 0;
-		fpsHandler = new FPSHandler(60, 0);
+		fpsHandler = new FPSHandler(30, 0);
 		loadConfigsFromDisk();
 		
 		ChessSprites.initialize();
@@ -157,6 +165,7 @@ public class BoardController implements Initializable {
 		addListeners();
 		Controller.addIconToButton(buttonUndo, Icons.ICON_MOVEMAXLEFT.getValue(), 18, 18, 20);
 		Controller.addIconToButton(buttonRedo, Icons.ICON_MOVEMAXRIGHT.getValue(), 18, 18, 20);
+		imageViewBoardFrame.setImage(new Image("./sprites/boards/board frame.jpg"));
 	}
 	
 	private void setPiecesOnTheBoard() throws Exception {
@@ -321,8 +330,8 @@ public class BoardController implements Initializable {
 
 	public void keyHandler(KeyEvent event) {
   	pressedKeys.add(event.getCode());
-	  if (event.getCode() == KeyCode.ADD || event.getCode() == KeyCode.SUBTRACT) {
-	  	int inc = event.getCode() == KeyCode.ADD ? 1 : -1;
+	  if (event.getCode() == KeyCode.UP || event.getCode() == KeyCode.DOWN) {
+	  	int inc = event.getCode() == KeyCode.UP ? 1 : -1;
 	  	if (event.getCode() == KeyCode.MULTIPLY) {
 	  		if (pressedKeys.contains(KeyCode.CONTROL))
 	  			setRandomBoardTilesSprites();
@@ -383,6 +392,11 @@ public class BoardController implements Initializable {
 	}
 	
 	private void resetGame() {
+		while (boardTimerIsRunning) {
+			try
+				{ Thread.sleep(100); }
+			catch (Exception e) {}
+		}
 		msg("");
 		setTitle();
 		try {
@@ -397,7 +411,6 @@ public class BoardController implements Initializable {
 			buttonRedo.setDisable(true);
 			resumirCronometro(null);
 			hoveredPiece = null;
-			gameOver = false;
 			cpuPlay = 0;
 			cpuPlay();
 			boardTimer();
@@ -419,6 +432,9 @@ public class BoardController implements Initializable {
 	}
 
 	private void boardTimer() {
+		if (boardTimerIsRunning)
+			return;
+		boardTimerIsRunning = true;
 		if (clearMsg != 0 && System.currentTimeMillis() >= clearMsg) {
 			clearMsg = 0;
 			msg("");
@@ -427,6 +443,7 @@ public class BoardController implements Initializable {
 			if (!pieceTravel.incPos()) {
 				canvasMovePiece.getGraphicsContext2D().clearRect(0, 0, 512, 576);
 				movePieceTo(pieceTravel.getTargetPosition());
+				fpsHandler.setCPS(30);
 			}
 			else {
 				PieceImage pieceImage = ChessSprites.pieceImages.get(piecePngType);
@@ -437,9 +454,9 @@ public class BoardController implements Initializable {
 		}
 		else
 			updateBoard();
-		textCronometroGame.setText(cronometroGame.getDuracaoStr());
-		textCronometroBlack.setText(cronometroBlack.getDuracaoStr());
-		textCronometroWhite.setText(cronometroWhite.getDuracaoStr());
+		textCronometroGame.setText(cronometroGame.getDuracaoStr().substring(0, 10));
+		textCronometroBlack.setText(cronometroBlack.getDuracaoStr().substring(0, 10));
+		textCronometroWhite.setText(cronometroWhite.getDuracaoStr().substring(0, 10));
 		if (!unknownError && !board.isGameOver() && board.isCpuTurn() && System.currentTimeMillis() >= cpuPlay) {
 			if (board.getChessAI().cpuSelectedAPiece()) {
   			cpuPlay += 100000;
@@ -472,6 +489,7 @@ public class BoardController implements Initializable {
 		fpsHandler.fpsCounter();
 		if (Program.windowIsOpen() && !gameOver)
 			GameTools.callMethodAgain(e -> boardTimer());
+		boardTimerIsRunning = false;
 	}
 
 	private void checkUndoButtons() {
@@ -525,11 +543,13 @@ public class BoardController implements Initializable {
 	
 	private void updateCapturedPieces() {
 		flowPaneWhiteCapturedPieces.getChildren().clear();
+		int w = ChessSprites.pieceImages.get(piecePngType).getTargetW();
+		int h = ChessSprites.pieceImages.get(piecePngType).getTargetH();
 		for (Piece piece : board.sortPieceListByPieceValue(board.getCapturedBlackPieces()))
-			flowPaneWhiteCapturedPieces.getChildren().add(ChessSprites.getPieceImage(piece, piecePngType, 32, 64));
+			flowPaneWhiteCapturedPieces.getChildren().add(ChessSprites.getPieceImage(piece, piecePngType, w / 2, h / 2));
 		flowPaneBlackCapturedPieces.getChildren().clear();
 		for (Piece piece : board.sortPieceListByPieceValue(board.getCapturedWhitePieces()))
-			flowPaneBlackCapturedPieces.getChildren().add(ChessSprites.getPieceImage(piece, piecePngType, 32, 64));
+			flowPaneBlackCapturedPieces.getChildren().add(ChessSprites.getPieceImage(piece, piecePngType, w / 2, h / 2));
 	}
 	
 	private void playWav(String wav) {
@@ -580,11 +600,10 @@ public class BoardController implements Initializable {
 				gc.strokeRect(x * 64 + n, y * 64 + 64 + n, 64 - n * 2, 64 - n * 2);
 		}
 
-		if (menuCheckItemHoverBlink.isSelected() && piece != null &&
-				selectedPiece == piece && fpsHandler.getElapsedFrames() / 2 % 2 == 0)
-					blinkRectangle = !blinkRectangle;
+		if (menuCheckItemHoverBlink.isSelected() && piece != null && selectedPiece == piece)
+			blinkPiece = (fpsHandler.getElapsedFrames() / 2) % 2 == 0;
 		if (piece != null && (!pieceTravel.isActive() || piece != travelingPiece) &&
-				(selectedPiece != piece || menuCheckItemHoverLift.isSelected() || piece.getColor() != board.getCurrentColorTurn() || !blinkRectangle)) {
+				(selectedPiece != piece || menuCheckItemHoverLift.isSelected() || piece.getColor() != board.getCurrentColorTurn() || !blinkPiece)) {
 					int[] p = ChessSprites.getXYFromPieceInfo(piece, piecePngType);
 					PieceImage pieceImage = ChessSprites.pieceImages.get(piecePngType);
 					int lift = menuCheckItemHoverLift.isSelected() && piece == selectedPiece && piece.getColor() == board.getCurrentColorTurn() ? 8 : 0;
@@ -663,6 +682,7 @@ public class BoardController implements Initializable {
 		travelingPiece = board.getSelectedPiece();
 		pieceTravel.setTravel(travelingPiece.getPosition(), targetPosition, movePieceDelay);
 		playWav("clicked");
+		fpsHandler.setCPS(120);
 		updateBoard();
 	}
 
