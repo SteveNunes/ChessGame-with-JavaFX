@@ -290,12 +290,12 @@ public class BoardController implements Initializable {
 	}
 
 	private void setRandomPiecesSprites()
-		{ setPieceSprite(new SecureRandom().nextInt(maxPieceSprites + 1)); }
+		{ setPieceSprite(new SecureRandom().nextInt(maxPieceSprites)); }
 
 	private void setRandomBoardTilesSprites() {
-		boardPngTypeA = new SecureRandom().nextInt(maxBoardsSprites + 1);
+		boardPngTypeA = new SecureRandom().nextInt(maxBoardsSprites);
 		do
-			boardPngTypeB = new SecureRandom().nextInt(maxBoardsSprites + 1);
+			boardPngTypeB = new SecureRandom().nextInt(maxBoardsSprites);
 		while (boardPngTypeA == boardPngTypeB);
 		for (int n = 0; n < maxBoardsSprites; n++) {
 			((CheckMenuItem)menuBoardOddTilesSprite.getItems().get(n)).setSelected(boardPngTypeA == n);
@@ -326,15 +326,15 @@ public class BoardController implements Initializable {
 
 	public void keyHandler(KeyEvent event) {
   	pressedKeys.add(event.getCode());
-	  if (event.getCode() == KeyCode.UP || event.getCode() == KeyCode.DOWN) {
+  	if (event.getCode() == KeyCode.MULTIPLY) {
+  		if (pressedKeys.contains(KeyCode.CONTROL))
+  			setRandomBoardTilesSprites();
+  		else
+  			setRandomPiecesSprites();
+  	}
+  	else if (event.getCode() == KeyCode.UP || event.getCode() == KeyCode.DOWN) {
 	  	int inc = event.getCode() == KeyCode.UP ? 1 : -1;
-	  	if (event.getCode() == KeyCode.MULTIPLY) {
-	  		if (pressedKeys.contains(KeyCode.CONTROL))
-	  			setRandomBoardTilesSprites();
-	  		else
-	  			setRandomPiecesSprites();
-	  	}
-	  	else if (pressedKeys.contains(KeyCode.SHIFT) || pressedKeys.contains(KeyCode.CONTROL)) {
+	  	if (pressedKeys.contains(KeyCode.SHIFT) || pressedKeys.contains(KeyCode.CONTROL)) {
 				int n = 0;
 		  	if (pressedKeys.contains(KeyCode.SHIFT) && pressedKeys.contains(KeyCode.CONTROL)) {
 		  		if ((piecePngType += inc) == maxPieceSprites)
