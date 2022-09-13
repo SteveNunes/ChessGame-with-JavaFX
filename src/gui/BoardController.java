@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.ResourceBundle;
+import java.util.function.Consumer;
 
 import application.Program;
 import board.Board;
@@ -30,6 +31,7 @@ import javafx.scene.control.Button;
 import javafx.scene.control.CheckMenuItem;
 import javafx.scene.control.Menu;
 import javafx.scene.control.MenuItem;
+import javafx.scene.effect.BoxBlur;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.input.KeyCode;
@@ -54,7 +56,6 @@ public class BoardController implements Initializable {
 
 	private Boolean unknownError;
 	private Boolean soundEnabled;
-	private Boolean blinkPiece;
 	private Boolean tryCatchOnConsole = false;
 	private Boolean gameOver;
 	private Cronometro cronometroGame;
@@ -140,13 +141,22 @@ public class BoardController implements Initializable {
   @FXML
   private CheckMenuItem menuCheckItemHoverLift;
   @FXML
+  private CheckMenuItem menuCheckItemTransparent;
+  @FXML
+  private CheckMenuItem menuCheckItemLinearFilteringOff;
+  @FXML
+  private CheckMenuItem menuCheckItemLinearFilteringX1;
+  @FXML
+  private CheckMenuItem menuCheckItemLinearFilteringX2;
+  @FXML
+  private CheckMenuItem menuCheckItemLinearFilteringX3;
+  @FXML
   private Menu menuMovingPieceDelay;
 
 	@Override
 	public void initialize(URL url, ResourceBundle rb) {
 		cronoTurn = null;
 		unknownError = false;
-		blinkPiece = false;
 		gameOver = false;
 		pressedKeys = new ArrayList<>();
 		mouseHoverPos = new Position(0, 0);
@@ -156,6 +166,7 @@ public class BoardController implements Initializable {
 		fpsHandler = new FPSHandler(30, 0);
 		loadConfigsFromDisk();
 		
+		setLinearFiltering();
 		ChessSprites.initialize();
 		addMenus();
 		addListeners();
@@ -175,6 +186,14 @@ public class BoardController implements Initializable {
 			{'P','P','P','P','P','P','P','P'},
 			{'R','N','B','Q','K','B','N','R'}
 		});
+	}
+
+	private void setLinearFiltering() {
+		List<CheckMenuItem> list = Arrays.asList(menuCheckItemLinearFilteringOff,
+			menuCheckItemLinearFilteringX1, menuCheckItemLinearFilteringX2, menuCheckItemLinearFilteringX3);
+		for (int n = 0; n < list.size(); n++)
+			if (list.get(n).isSelected())
+				canvasBoard.getGraphicsContext2D().setEffect(new BoxBlur(1, 1, n));
 	}
 
 	private void addListeners() {
@@ -198,12 +217,27 @@ public class BoardController implements Initializable {
 	    canvasBoardClicked((int)(e.getY() / 64), (int)(e.getX() / 64)));
 	}
 	
+	private void updateCheckMenuItensBasedOnLastSelected(List<CheckMenuItem> checkMenuItemList, Consumer<?> consumerWhenSelect) {
+		for (int n = 0; n < checkMenuItemList.size(); n++) {
+			final int x = n;
+			final List<CheckMenuItem> list2 = new ArrayList<>(checkMenuItemList);
+			checkMenuItemList.get(n).setOnAction(e -> {
+				for (int n2 = 0; n2 < list2.size(); n2++)
+					list2.get(n2).setSelected(n2 == x);
+				if (consumerWhenSelect != null)
+					consumerWhenSelect.accept(null);
+			});
+		}
+	}
+
+	private void updateCheckMenuItensBasedOnLastSelected(List<CheckMenuItem> checkMenuItemList)
+		{ updateCheckMenuItensBasedOnLastSelected(checkMenuItemList, null); }
+
 	private void addMenus() {
-		maxPieceSprites = 0;
-		menuCheckItemHoverBlink.setOnAction(e ->
-			menuCheckItemHoverLift.setSelected(menuCheckItemHoverBlink.isSelected()));
-		menuCheckItemHoverLift.setOnAction(e ->
-		menuCheckItemHoverBlink.setSelected(menuCheckItemHoverLift.isSelected()));
+		updateCheckMenuItensBasedOnLastSelected(Arrays.asList(menuCheckItemLinearFilteringOff,
+				menuCheckItemLinearFilteringX1, menuCheckItemLinearFilteringX2,
+				menuCheckItemLinearFilteringX3), e -> setLinearFiltering());
+		updateCheckMenuItensBasedOnLastSelected(Arrays.asList(menuCheckItemHoverBlink, menuCheckItemHoverLift, menuCheckItemTransparent));
 		for (int n = 10; n <= 60; n += 10) {
 			CheckMenuItem checkMenuItem = new CheckMenuItem("" + n + " frames");
 			final int x = n;
@@ -325,15 +359,16 @@ public class BoardController implements Initializable {
 	}
 
 	public void keyHandler(KeyEvent event) {
-  	pressedKeys.add(event.getCode());
-  	if (event.getCode() == KeyCode.MULTIPLY) {
+		KeyCode keyCode = event.getCode();
+  	pressedKeys.add(keyCode);
+  	if (keyCode == KeyCode.MULTIPLY) {
   		if (pressedKeys.contains(KeyCode.CONTROL))
   			setRandomBoardTilesSprites();
   		else
   			setRandomPiecesSprites();
   	}
-  	else if (event.getCode() == KeyCode.UP || event.getCode() == KeyCode.DOWN) {
-	  	int inc = event.getCode() == KeyCode.UP ? 1 : -1;
+  	else if (keyCode == KeyCode.UP || keyCode == KeyCode.DOWN) {
+	  	int inc = keyCode == KeyCode.UP ? 1 : -1;
 	  	if (pressedKeys.contains(KeyCode.SHIFT) || pressedKeys.contains(KeyCode.CONTROL)) {
 				int n = 0;
 		  	if (pressedKeys.contains(KeyCode.SHIFT) && pressedKeys.contains(KeyCode.CONTROL)) {
@@ -551,6 +586,7 @@ public class BoardController implements Initializable {
 	}
 	
 	private void drawTile(int x, int y) {
+		GraphicsContext gc = canvasBoard.getGraphicsContext2D();
 		Position pos = new Position(x, y);
 
 		Color rectangleColor = null;
@@ -580,23 +616,26 @@ public class BoardController implements Initializable {
 			}
 		
 		if (rectangleColor != null) {
-			GraphicsContext gc = canvasBoard.getGraphicsContext2D();
 			gc.setStroke(rectangleColor);
 			for (int n = 0; n < 5; n++)
 				gc.strokeRect(x * 64 + n, y * 64 + 64 + n, 64 - n * 2, 64 - n * 2);
 		}
 
-		if (menuCheckItemHoverBlink.isSelected() && piece != null && selectedPiece == piece)
-			blinkPiece = (fpsHandler.getElapsedFrames() / 2) % 2 == 0;
-		if (piece != null && (!pieceTravel.isActive() || piece != travelingPiece) &&
-				(selectedPiece != piece || menuCheckItemHoverLift.isSelected() || piece.getColor() != board.getCurrentColorTurn() || !blinkPiece)) {
+		gc.setGlobalAlpha(1);
+		Boolean blink = (fpsHandler.getElapsedFrames() / 2) % 2 == 0;
+		if (piece != null && (!pieceTravel.isActive() || piece != travelingPiece)) {
 					int[] p = ChessSprites.getXYFromPieceInfo(piece, piecePngType);
 					PieceImage pieceImage = ChessSprites.pieceImages.get(piecePngType);
 					int lift = menuCheckItemHoverLift.isSelected() && piece == selectedPiece && piece.getColor() == board.getCurrentColorTurn() ? 8 : 0;
-					canvasBoard.getGraphicsContext2D().drawImage(ChessSprites.getPieceImageSet(piecePngType), p[0], p[1], pieceImage.getSourceW(), pieceImage.getSourceH(), x * 64 + 32 - pieceImage.getTargetW() / 2, y * 64 + 128 - pieceImage.getTargetH() - lift, pieceImage.getTargetW(), pieceImage.getTargetH());
+					if (piece == selectedPiece && piece.getColor() == board.getCurrentColorTurn() &&
+							(menuCheckItemTransparent.isSelected() || 
+							(menuCheckItemHoverBlink.isSelected() && !blink)))
+								gc.setGlobalAlpha(0.5);
+					gc.drawImage(ChessSprites.getPieceImageSet(piecePngType), p[0], p[1], pieceImage.getSourceW(), pieceImage.getSourceH(), x * 64 + 32 - pieceImage.getTargetW() / 2, y * 64 + 128 - pieceImage.getTargetH() - lift, pieceImage.getTargetW(), pieceImage.getTargetH());
 		}
 	}
-	
+//          gc.setEffect(new BoxBlur(1, 1, 1));
+
 	private void canvasBoardMoved(int row, int column) {
     if (!pieceTravel.isActive() && !unknownError && !board.isGameOver() && !board.isCpuTurn()) {
 	  	Position position = new Position(column, row - 1);
@@ -877,6 +916,11 @@ public class BoardController implements Initializable {
 			cpuColor = PieceColor.valueOf(ini.read("CONFIG", "cpuColor"));
 			menuCheckItemHoverBlink.setSelected(ini.read("CONFIG", "hoverPieceMode").equals("1"));
 			menuCheckItemHoverLift.setSelected(ini.read("CONFIG", "hoverPieceMode").equals("2"));
+			menuCheckItemTransparent.setSelected(ini.read("CONFIG", "hoverPieceMode").equals("3"));
+			menuCheckItemLinearFilteringOff.setSelected(ini.read("CONFIG", "linearFiltering").equals("0"));
+			menuCheckItemLinearFilteringX1.setSelected(ini.read("CONFIG", "linearFiltering").equals("1"));
+			menuCheckItemLinearFilteringX2.setSelected(ini.read("CONFIG", "linearFiltering").equals("2"));
+			menuCheckItemLinearFilteringX3.setSelected(ini.read("CONFIG", "linearFiltering").equals("3"));
 		}
 		catch (Exception e) {
 			movePieceDelay = 20;
@@ -888,6 +932,7 @@ public class BoardController implements Initializable {
 			chessPlayMode = ChessPlayMode.PLAYER_VS_PLAYER;
 			cpuColor = PieceColor.BLACK;
 			menuCheckItemHoverBlink.setSelected(true);
+			menuCheckItemLinearFilteringX2.setSelected(true);
 			if (tryCatchOnConsole) {
 				System.err.println("Error on catch 009");
 				e.printStackTrace();
@@ -906,7 +951,10 @@ public class BoardController implements Initializable {
 			ini.write("CONFIG", "chessPlayMode", chessPlayMode.name());
 			ini.write("CONFIG", "cpuColor", cpuColor.name());
 			ini.write("CONFIG", "movePieceDelay", "" + movePieceDelay);
-			ini.write("CONFIG", "hoverPieceMode", menuCheckItemHoverBlink.isSelected() ? "1" : "2");
+			ini.write("CONFIG", "hoverPieceMode", menuCheckItemHoverBlink.isSelected() ? "1" : menuCheckItemHoverLift.isSelected() ? "2" : "3");
+			ini.write("CONFIG", "linearFiltering", menuCheckItemLinearFilteringOff.isSelected() ? "0" :
+				menuCheckItemLinearFilteringX1.isSelected() ? "1" :
+				menuCheckItemLinearFilteringX2.isSelected() ? "2" : "3");
 			ini.saveToDisk();
 		}
 		catch (Exception e) {
