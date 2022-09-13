@@ -479,7 +479,7 @@ public class BoardController implements Initializable {
 		textCronometroGame.setText(cronometroGame.getDuracaoStr().substring(0, 10));
 		textCronometroBlack.setText(cronometroBlack.getDuracaoStr().substring(0, 10));
 		textCronometroWhite.setText(cronometroWhite.getDuracaoStr().substring(0, 10));
-		if (!unknownError && !board.isGameOver() && board.isCpuTurn() && System.currentTimeMillis() >= cpuPlay) {
+		if (!unknownError && !board.isGameOver() && !board.canRedoMove() && board.isCpuTurn() && System.currentTimeMillis() >= cpuPlay) {
 			if (board.getChessAI().cpuSelectedAPiece()) {
   			cpuPlay += 100000;
   			startPieceTravel(board.getChessAI().cpuSelectedTargetPosition());

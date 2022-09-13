@@ -57,8 +57,6 @@
                         <CheckMenuItem fx:id="menuCheckItemLinearFilteringX3" mnemonicParsing="false" text="x3" />
                      </items>
                   </Menu>
-                  <SeparatorMenuItem mnemonicParsing="false" />
-                  <MenuItem fx:id="menuItemCloseGame" mnemonicParsing="false" text="Close game" />
                   <Menu mnemonicParsing="false" text="When hover mouse on pieces">
                      <items>
                         <CheckMenuItem fx:id="menuCheckItemHoverBlink" mnemonicParsing="false" text="Blink the piece" />
@@ -66,6 +64,8 @@
                         <CheckMenuItem fx:id="menuCheckItemTransparent" mnemonicParsing="false" text="Make it transparent" />
                      </items>
                   </Menu>
+                  <SeparatorMenuItem mnemonicParsing="false" />
+                  <MenuItem fx:id="menuItemCloseGame" mnemonicParsing="false" text="Close game" />
             </items>
           </Menu>
             <Menu mnemonicParsing="false" text="Edit board">
