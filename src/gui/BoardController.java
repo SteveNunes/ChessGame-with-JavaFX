@@ -57,7 +57,6 @@ public class BoardController implements Initializable {
 	private Boolean blinkPiece;
 	private Boolean tryCatchOnConsole = false;
 	private Boolean gameOver;
-	private Boolean boardTimerIsRunning;
 	private Cronometro cronometroGame;
 	private Cronometro cronometroBlack;
 	private Cronometro cronometroWhite;
@@ -149,7 +148,6 @@ public class BoardController implements Initializable {
 		unknownError = false;
 		blinkPiece = false;
 		gameOver = false;
-		boardTimerIsRunning = false;
 		pressedKeys = new ArrayList<>();
 		mouseHoverPos = new Position(0, 0);
 		pieceTravel = new PieceTravel();
@@ -377,8 +375,8 @@ public class BoardController implements Initializable {
 	public void init() {
 		board = new Board();
 		resumirCronometro(null);
-	  boardTimer();
 		resetGame();
+	  boardTimer();
 	}
 	
 	private void setTitle() {
@@ -390,11 +388,6 @@ public class BoardController implements Initializable {
 	}
 	
 	private void resetGame() {
-		while (boardTimerIsRunning) {
-			try
-				{ Thread.sleep(100); }
-			catch (Exception e) {}
-		}
 		msg("");
 		setTitle();
 		try {
@@ -411,7 +404,6 @@ public class BoardController implements Initializable {
 			hoveredPiece = null;
 			cpuPlay = 0;
 			cpuPlay();
-			boardTimer();
 		}
 		catch (Exception e) {
 			Program.getMainStage().close();
@@ -430,9 +422,6 @@ public class BoardController implements Initializable {
 	}
 
 	private void boardTimer() {
-		if (boardTimerIsRunning)
-			return;
-		boardTimerIsRunning = true;
 		if (clearMsg != 0 && System.currentTimeMillis() >= clearMsg) {
 			clearMsg = 0;
 			msg("");
@@ -487,7 +476,6 @@ public class BoardController implements Initializable {
 		fpsHandler.fpsCounter();
 		if (Program.windowIsOpen() && !gameOver)
 			GameTools.callMethodAgain(e -> boardTimer());
-		boardTimerIsRunning = false;
 	}
 
 	private void checkUndoButtons() {
