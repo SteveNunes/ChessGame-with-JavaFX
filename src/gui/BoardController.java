@@ -56,7 +56,7 @@ import util.Sounds;
 
 public class BoardController implements Initializable {
 
-	private static Boolean tryCatchOnConsole = true;
+	private static Boolean tryCatchOnConsole = false;
 
 	private Boolean unknownError;
 	private Boolean soundEnabled;
@@ -185,22 +185,14 @@ public class BoardController implements Initializable {
 	
 	private void setPiecesOnTheBoard() throws Exception {
 		board.setBoard(new Character[][] {
-//			{'r','n','b','q','k','b','n','r'},
-//			{'p','p','p','p','p','p','p','p'},
-//			{' ',' ',' ',' ',' ',' ',' ',' '},
-//			{' ',' ',' ',' ',' ',' ',' ',' '},
-//			{' ',' ',' ',' ',' ',' ',' ',' '},
-//			{' ',' ',' ',' ',' ',' ',' ',' '},
-//			{'P','P','P','P','P','P','P','P'},
-//			{'R','N','B','Q','K','B','N','R'}
-			{' ','n','b',' ','k','b','n',' '},
-			{'r',' ','q','p',' ','p','r',' '},
-			{' ','p',' ',' ',' ',' ','p',' '},
-			{'p','B','p',' ','P',' ',' ','p'},
-			{'P',' ',' ',' ','P',' ',' ',' '},
-			{' ',' ','P',' ','N','N',' ',' '},
-			{' ','P',' ','Q',' ','P','P','P'},
-			{' ',' ',' ','R','K',' ',' ','R'}
+			{'r','n','b','q','k','b','n','r'},
+			{'p','p','p','p','p','p','p','p'},
+			{' ',' ',' ',' ',' ',' ',' ',' '},
+			{' ',' ',' ',' ',' ',' ',' ',' '},
+			{' ',' ',' ',' ',' ',' ',' ',' '},
+			{' ',' ',' ',' ',' ',' ',' ',' '},
+			{'P','P','P','P','P','P','P','P'},
+			{'R','N','B','Q','K','B','N','R'}
 		});
 	}
 
