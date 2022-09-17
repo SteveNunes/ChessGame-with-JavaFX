@@ -22,7 +22,7 @@
 
 <VBox fx:id="vBoxMainWindow" alignment="TOP_CENTER" prefHeight="770.0" prefWidth="1028.0" xmlns="http://javafx.com/javafx/18" xmlns:fx="http://javafx.com/fxml/1" fx:controller="gui.BoardController">
    <children>
-      <MenuBar>
+      <MenuBar fx:id="menuBar">
         <menus>
           <Menu mnemonicParsing="false" text="Options">
             <items>
@@ -30,6 +30,7 @@
                   <SeparatorMenuItem mnemonicParsing="false" />
                   <Menu fx:id="menuMovingPieceDelay" mnemonicParsing="false" text="Moving piece delay" />
                   <Menu fx:id="menuCpuSpeed" mnemonicParsing="false" text="CPU action speed" />
+                  <CheckMenuItem fx:id="menuCheckItemSwapBoard" mnemonicParsing="false" text="Swap colors" />
                   <SeparatorMenuItem mnemonicParsing="false" />
                   <Menu mnemonicParsing="false" text="Board sprites">
                      <items>
@@ -187,7 +188,7 @@
                                                                         </Text>
                                                                      </children>
                                                                   </HBox>
-                                                                  <HBox alignment="CENTER" spacing="10.0">
+                                                                  <HBox fx:id="hBoxUndoControls" alignment="CENTER" spacing="10.0">
                                                                      <children>
                                                                         <Button fx:id="buttonUndo" mnemonicParsing="false" prefHeight="25.0" prefWidth="30.0" />
                                                                         <Button fx:id="buttonRedo" mnemonicParsing="false" prefHeight="25.0" prefWidth="30.0" />

@@ -20,7 +20,6 @@ public class Program extends Application {
 	private static BoardController boardController;
 	private static List<Stage> stageList = new ArrayList<>();
 	private static Boolean windowIsOpen = false; 
-
 	
 	public static Class<? extends Program> getMainClass()
 		{ return mainClass; }
