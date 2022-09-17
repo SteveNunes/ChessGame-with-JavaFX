@@ -61,6 +61,8 @@ public class BoardController implements Initializable {
 	private Boolean unknownError;
 	private Boolean soundEnabled;
 	private Boolean gameOver;
+	private Boolean disabledControlsWhileIsCpuTurn;
+	private Boolean justStarted;
 	private Cronometro cronometroGame;
 	private Cronometro cronometroBlack;
 	private Cronometro cronometroWhite;
@@ -72,8 +74,7 @@ public class BoardController implements Initializable {
 	private FPSHandler fpsHandler;
 	private Board board;
 	private List<KeyCode> pressedKeys;
-	private Boolean disabledControlsWhileIsCpuTurn;
-	private Boolean justStarted;
+	private IniFile configIniFile;
 
 	private long cpuPlay;
 	private long clearMsg;
@@ -161,6 +162,10 @@ public class BoardController implements Initializable {
   @FXML
   private MenuBar menuBar;
   @FXML
+  private Menu menuLoadSpriteSetup;
+  @FXML
+  private MenuItem menuItemSaveSpriteSetup;
+  @FXML
   private HBox hBoxUndoControls;
 
 	@Override
@@ -172,6 +177,7 @@ public class BoardController implements Initializable {
 		mouseHoverPos = new Position(0, 0);
 		clearMsg = 0;
 		fpsHandler = new FPSHandler(30, 0);
+		configIniFile = IniFile.getNewIniFileInstance("./config.ini");
 		loadConfigsFromDisk();
 		
 		setLinearFiltering();
@@ -302,6 +308,21 @@ public class BoardController implements Initializable {
 		});
 		menuCheckItemSwapBoard.setOnAction(e -> board.swapSides());
 
+		updateMenuSpriteSetup();
+		
+		menuItemSaveSpriteSetup.setOnAction(e -> {
+			String name = Alerts.textPrompt("Save sprite setup", "Save sprite setup", null, "Type the name for save the current sprite setup, which includes the both odd and even board sprites, and piece sprites");
+			if (name != null) {
+				Boolean newItem = configIniFile.read("BOARD_SPRITES_SETUP", name) == null;
+				if (newItem || Alerts.confirmation("Confirmation", "There already exists a setup with this name. Overwrite it?")) {
+					configIniFile.write("BOARD_SPRITES_SETUP", name, piecePngType + " " + boardPngTypeA + " " + boardPngTypeB);
+					Alerts.information("Information", "Sprite setup successfully saved");
+				}
+				if (newItem)
+					updateMenuSpriteSetup();
+			}
+		});
+		
 		menuItemRandomBoard.setOnAction(e -> setRandomBoardTilesSprites());
 		checkMenuItemRandomPieceSprite.setOnAction(e -> setRandomPiecesSprites());
 		menuCheckItemSound.setSelected(soundEnabled);
@@ -325,6 +346,22 @@ public class BoardController implements Initializable {
 		updateCpuSpeedMenu();
 	}
 	
+	private void updateMenuSpriteSetup() {
+		menuLoadSpriteSetup.getItems().clear();
+		for (String s : configIniFile.getItemList("BOARD_SPRITES_SETUP")) {
+			MenuItem menuItem = new MenuItem(s);
+			menuItem.setOnAction(e -> {
+				String[] split = configIniFile.read("BOARD_SPRITES_SETUP", s).split(" ");
+				setPieceSprite(Integer.parseInt(split[0]));
+				boardPngTypeA = Integer.parseInt(split[1]);
+				boardPngTypeB = Integer.parseInt(split[2]);
+				updateBoard();
+			});
+			menuLoadSpriteSetup.getItems().add(menuItem);
+		}
+		menuLoadSpriteSetup.setDisable(menuLoadSpriteSetup.getItems().isEmpty());
+	}
+
 	private void setPieceSprite(int n) {
 		canvasMovePiece.getGraphicsContext2D().clearRect(0, 0, 512, 576);
 		piecePngType = n;
@@ -973,23 +1010,22 @@ public class BoardController implements Initializable {
 	
 	public void loadConfigsFromDisk() {
 		try {
-			IniFile ini = IniFile.getNewIniFileInstance("./config.ini");
-			movePieceDelay = Integer.parseInt(ini.read("CONFIG", "movePieceDelay"));
-			piecePngType = Integer.parseInt(ini.read("CONFIG", "piecePngType"));
-			boardPngTypeA = Integer.parseInt(ini.read("CONFIG", "boardPngTypeA"));
-			boardPngTypeB = Integer.parseInt(ini.read("CONFIG", "boardPngTypeB"));
-			cpuPlaySpeed = Integer.parseInt(ini.read("CONFIG", "cpuPlaySpeed"));
-			soundEnabled = Boolean.parseBoolean(ini.read("CONFIG", "soundEnabled"));
-			chessPlayMode = ChessPlayMode.valueOf(ini.read("CONFIG", "chessPlayMode"));
-			cpuColor = PieceColor.valueOf(ini.read("CONFIG", "cpuColor"));
-			menuCheckItemHoverBlink.setSelected(ini.read("CONFIG", "hoverPieceMode").equals("1"));
-			menuCheckItemHoverLift.setSelected(ini.read("CONFIG", "hoverPieceMode").equals("2"));
-			menuCheckItemTransparent.setSelected(ini.read("CONFIG", "hoverPieceMode").equals("3"));
-			menuCheckItemLinearFilteringOff.setSelected(ini.read("CONFIG", "linearFiltering").equals("0"));
-			menuCheckItemLinearFilteringX1.setSelected(ini.read("CONFIG", "linearFiltering").equals("1"));
-			menuCheckItemLinearFilteringX2.setSelected(ini.read("CONFIG", "linearFiltering").equals("2"));
-			menuCheckItemLinearFilteringX3.setSelected(ini.read("CONFIG", "linearFiltering").equals("3"));
-			menuCheckItemSwapBoard.setSelected(Boolean.parseBoolean(ini.read("CONFIG", "swapColors")));
+			movePieceDelay = Integer.parseInt(configIniFile.read("CONFIG", "movePieceDelay"));
+			piecePngType = Integer.parseInt(configIniFile.read("CONFIG", "piecePngType"));
+			boardPngTypeA = Integer.parseInt(configIniFile.read("CONFIG", "boardPngTypeA"));
+			boardPngTypeB = Integer.parseInt(configIniFile.read("CONFIG", "boardPngTypeB"));
+			cpuPlaySpeed = Integer.parseInt(configIniFile.read("CONFIG", "cpuPlaySpeed"));
+			soundEnabled = Boolean.parseBoolean(configIniFile.read("CONFIG", "soundEnabled"));
+			chessPlayMode = ChessPlayMode.valueOf(configIniFile.read("CONFIG", "chessPlayMode"));
+			cpuColor = PieceColor.valueOf(configIniFile.read("CONFIG", "cpuColor"));
+			menuCheckItemHoverBlink.setSelected(configIniFile.read("CONFIG", "hoverPieceMode").equals("1"));
+			menuCheckItemHoverLift.setSelected(configIniFile.read("CONFIG", "hoverPieceMode").equals("2"));
+			menuCheckItemTransparent.setSelected(configIniFile.read("CONFIG", "hoverPieceMode").equals("3"));
+			menuCheckItemLinearFilteringOff.setSelected(configIniFile.read("CONFIG", "linearFiltering").equals("0"));
+			menuCheckItemLinearFilteringX1.setSelected(configIniFile.read("CONFIG", "linearFiltering").equals("1"));
+			menuCheckItemLinearFilteringX2.setSelected(configIniFile.read("CONFIG", "linearFiltering").equals("2"));
+			menuCheckItemLinearFilteringX3.setSelected(configIniFile.read("CONFIG", "linearFiltering").equals("3"));
+			menuCheckItemSwapBoard.setSelected(Boolean.parseBoolean(configIniFile.read("CONFIG", "swapColors")));
 		}
 		catch (Exception e) {
 			movePieceDelay = 20;
@@ -1011,21 +1047,20 @@ public class BoardController implements Initializable {
 
 	public void saveConfigsToDisk() {
 		try {
-			IniFile ini = IniFile.getNewIniFileInstance("./config.ini");
-			ini.write("CONFIG", "piecePngType", "" + piecePngType);
-			ini.write("CONFIG", "boardPngTypeA", "" + boardPngTypeA);
-			ini.write("CONFIG", "boardPngTypeB", "" + boardPngTypeB);
-			ini.write("CONFIG", "cpuPlaySpeed", "" + cpuPlaySpeed);
-			ini.write("CONFIG", "soundEnabled", "" + soundEnabled.toString());
-			ini.write("CONFIG", "swapColors", "" + menuCheckItemSwapBoard.isSelected());
-			ini.write("CONFIG", "chessPlayMode", chessPlayMode.name());
-			ini.write("CONFIG", "cpuColor", cpuColor.name());
-			ini.write("CONFIG", "movePieceDelay", "" + movePieceDelay);
-			ini.write("CONFIG", "hoverPieceMode", menuCheckItemHoverBlink.isSelected() ? "1" : menuCheckItemHoverLift.isSelected() ? "2" : "3");
-			ini.write("CONFIG", "linearFiltering", menuCheckItemLinearFilteringOff.isSelected() ? "0" :
+			configIniFile.write("CONFIG", "piecePngType", "" + piecePngType);
+			configIniFile.write("CONFIG", "boardPngTypeA", "" + boardPngTypeA);
+			configIniFile.write("CONFIG", "boardPngTypeB", "" + boardPngTypeB);
+			configIniFile.write("CONFIG", "cpuPlaySpeed", "" + cpuPlaySpeed);
+			configIniFile.write("CONFIG", "soundEnabled", "" + soundEnabled.toString());
+			configIniFile.write("CONFIG", "swapColors", "" + menuCheckItemSwapBoard.isSelected());
+			configIniFile.write("CONFIG", "chessPlayMode", chessPlayMode.name());
+			configIniFile.write("CONFIG", "cpuColor", cpuColor.name());
+			configIniFile.write("CONFIG", "movePieceDelay", "" + movePieceDelay);
+			configIniFile.write("CONFIG", "hoverPieceMode", menuCheckItemHoverBlink.isSelected() ? "1" : menuCheckItemHoverLift.isSelected() ? "2" : "3");
+			configIniFile.write("CONFIG", "linearFiltering", menuCheckItemLinearFilteringOff.isSelected() ? "0" :
 				menuCheckItemLinearFilteringX1.isSelected() ? "1" :
 				menuCheckItemLinearFilteringX2.isSelected() ? "2" : "3");
-			ini.saveToDisk();
+			configIniFile.saveToDisk();
 		}
 		catch (Exception e) {
 			if (tryCatchOnConsole) {

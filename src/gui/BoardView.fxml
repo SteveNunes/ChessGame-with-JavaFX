@@ -45,6 +45,9 @@
                            <items>
                               <CheckMenuItem fx:id="checkMenuItemRandomPieceSprite" mnemonicParsing="false" text="Random" />
                            </items></Menu>
+                        <SeparatorMenuItem mnemonicParsing="false" />
+                        <Menu fx:id="menuLoadSpriteSetup" mnemonicParsing="false" text="Load sprites setup" />
+                        <MenuItem fx:id="menuItemSaveSpriteSetup" mnemonicParsing="false" text="Save current sprite setup" />
                      </items>
                   </Menu>
                   <SeparatorMenuItem mnemonicParsing="false" />
