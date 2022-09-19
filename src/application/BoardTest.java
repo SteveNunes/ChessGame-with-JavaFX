@@ -51,31 +51,35 @@ public class BoardTest {
 			try { board.getChessAI().doCpuMoveSelectedPiece(); } catch (Exception e) {}
 			
 			System.out.println();
-			for (int y = -1; y < 8; y++) {
-				for (int z = 0; z < 2; z++) {
-					for (int x = -1; x < 8; x++) {
-						if (x == -1)
-							System.out.print((y == -1 ? " " : y) + " ");
-						else if (y == -1)
-							System.out.print(" " + x + " ");
-						else if (z == 0)
-							System.out.print(qt(b[y][x]));
-						else {
-							Piece piece = board.getPieceAt(new Position(x,y));
-							System.out.print(qt(piece));
-						}
-					}
-					System.out.print("      ");
-				}
-				System.out.println();
-			}
+			drawBoard(b);
 			if (board.pawnWasPromoted())
 				try { board.promotePawnTo(PieceType.QUEEN); } catch (Exception e) {}
 			sc.nextLine();
 		}
 	}
 	
-	private static String qt(Piece piece)
+	public static void drawBoard(Piece[][] b) {
+		for (int y = -1; y < 8; y++) {
+			for (int z = 0; z < 2; z++) {
+				for (int x = -1; x < 8; x++) {
+					if (x == -1)
+						System.out.print((y == -1 ? " " : y) + " ");
+					else if (y == -1)
+						System.out.print(" " + x + " ");
+					else if (z == 0)
+						System.out.print(qt(b[y][x]));
+					else {
+						Piece piece = board.getPieceAt(new Position(x,y));
+						System.out.print(qt(piece));
+					}
+				}
+				System.out.print("      ");
+			}
+			System.out.println();
+		}
+	}
+
+	public static String qt(Piece piece)
 		{ return (piece == board.getLastMovedPiece() ? "<" : "[") +
 				(piece == null ? " " : piece.isWhite() ? piece.let() : Character.toLowerCase(piece.let())) +
 				(piece == board.getLastMovedPiece() ? ">" : "]"); }

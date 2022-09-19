@@ -77,7 +77,8 @@
                   <CheckMenuItem fx:id="menuCheckItemEditMode" mnemonicParsing="false" text="Edit mode" />
                   <MenuItem fx:id="menuItemCreateNewBoard" mnemonicParsing="false" text="Create new board" />
                   <Menu fx:id="menuLoadBoard" mnemonicParsing="false" text="Load board" />
-                  <MenuItem fx:id="menuItemSaveBoard" mnemonicParsing="false" text="Save board" />
+                  <Menu fx:id="menuRenameBoard" mnemonicParsing="false" text="Rename board" />
+                  <Menu fx:id="menuRemoveBoard" mnemonicParsing="false" text="Remove board" />
                </items>
             </Menu>
         </menus>
@@ -98,7 +99,7 @@
                      <children>
                         <VBox spacing="10.0">
                            <children>
-                              <VBox alignment="TOP_CENTER">
+                              <VBox fx:id="vBoxChronometer1" alignment="TOP_CENTER">
                                  <children>
                                     <Text strokeType="OUTSIDE" strokeWidth="0.0" text="Black:">
                                        <font>
@@ -116,12 +117,116 @@
                         </VBox>
                         <VBox alignment="TOP_CENTER">
                            <children>
-                              <Text strokeType="OUTSIDE" strokeWidth="0.0" text="Captured pieces">
+                              <Text fx:id="textCapturedPieces1" strokeType="OUTSIDE" strokeWidth="0.0" text="Captured pieces">
                                  <font>
                                     <Font name="Lucida Console" size="18.0" />
                                  </font>
                               </Text>
                               <FlowPane fx:id="flowPaneBlackCapturedPieces" />
+                              <VBox fx:id="vBoxEditHelper" prefHeight="200.0" prefWidth="100.0">
+                                 <children>
+                                    <Text fill="#dc1ba9" strokeType="OUTSIDE" strokeWidth="0.0" text="Keyboard shortcuts">
+                                       <font>
+                                          <Font name="Lucida Console" size="14.0" />
+                                       </font>
+                                    </Text>
+                                    <Text strokeType="OUTSIDE" strokeWidth="0.0">
+                                       <font>
+                                          <Font name="Lucida Console" size="18.0" />
+                                       </font>
+                                    </Text>
+                                    <Text fill="#dc7208" strokeType="OUTSIDE" strokeWidth="0.0" text="K - King">
+                                       <font>
+                                          <Font name="Lucida Console" size="14.0" />
+                                       </font>
+                                    </Text>
+                                    <Text fill="#dc7208" strokeType="OUTSIDE" strokeWidth="0.0" text="Q - Queen">
+                                       <font>
+                                          <Font name="Lucida Console" size="14.0" />
+                                       </font>
+                                    </Text>
+                                    <Text fill="#dc7208" strokeType="OUTSIDE" strokeWidth="0.0" text="R - Rook">
+                                       <font>
+                                          <Font name="Lucida Console" size="14.0" />
+                                       </font>
+                                    </Text>
+                                    <Text fill="#dc7208" strokeType="OUTSIDE" strokeWidth="0.0" text="N - Knight">
+                                       <font>
+                                          <Font name="Lucida Console" size="14.0" />
+                                       </font>
+                                    </Text>
+                                    <Text fill="#dc7208" strokeType="OUTSIDE" strokeWidth="0.0" text="B - Bishop">
+                                       <font>
+                                          <Font name="Lucida Console" size="14.0" />
+                                       </font>
+                                    </Text>
+                                    <Text fill="#dc7208" strokeType="OUTSIDE" strokeWidth="0.0" text="P - Pawn">
+                                       <font>
+                                          <Font name="Lucida Console" size="14.0" />
+                                       </font>
+                                    </Text>
+                                    <Text strokeType="OUTSIDE" strokeWidth="0.0">
+                                       <font>
+                                          <Font name="Lucida Console" size="18.0" />
+                                       </font>
+                                    </Text>
+                                    <Text fill="#1127c9" strokeType="OUTSIDE" strokeWidth="0.0" text="Left Click:">
+                                       <font>
+                                          <Font name="Lucida Console" size="14.0" />
+                                       </font>
+                                    </Text>
+                                    <Text fill="#1127c9" strokeType="OUTSIDE" strokeWidth="0.0" text="  White piece">
+                                       <font>
+                                          <Font name="Lucida Console" size="14.0" />
+                                       </font>
+                                    </Text>
+                                    <Text strokeType="OUTSIDE" strokeWidth="0.0">
+                                       <font>
+                                          <Font name="Lucida Console" size="14.0" />
+                                       </font>
+                                    </Text>
+                                    <Text fill="#a715a9" strokeType="OUTSIDE" strokeWidth="0.0" text="Right Click:">
+                                       <font>
+                                          <Font name="Lucida Console" size="14.0" />
+                                       </font>
+                                    </Text>
+                                    <Text fill="#a715a9" strokeType="OUTSIDE" strokeWidth="0.0" text="  Black piece">
+                                       <font>
+                                          <Font name="Lucida Console" size="14.0" />
+                                       </font>
+                                    </Text>
+                                    <Text strokeType="OUTSIDE" strokeWidth="0.0">
+                                       <font>
+                                          <Font name="Lucida Console" size="14.0" />
+                                       </font>
+                                    </Text>
+                                    <Text fill="#098618" strokeType="OUTSIDE" strokeWidth="0.0" text="Click over an empty">
+                                       <font>
+                                          <Font name="Lucida Console" size="14.0" />
+                                       </font>
+                                    </Text>
+                                    <Text fill="#098618" strokeType="OUTSIDE" strokeWidth="0.0" text="tile for add a piece">
+                                       <font>
+                                          <Font name="Lucida Console" size="14.0" />
+                                       </font>
+                                    </Text>
+                                    <Text strokeType="OUTSIDE" strokeWidth="0.0">
+                                       <font>
+                                          <Font name="Lucida Console" size="14.0" />
+                                       </font>
+                                    </Text>
+                                    <Text fill="#e40e0e" strokeType="OUTSIDE" strokeWidth="0.0" text="Click over an placed">
+                                       <font>
+                                          <Font name="Lucida Console" size="14.0" />
+                                       </font>
+                                    </Text>
+                                    <Text fill="#e40e0e" strokeType="OUTSIDE" strokeWidth="0.0" text="piece for remove it">
+                                       <font>
+                                          <Font name="Lucida Console" size="14.0" />
+                                       </font>
+                                    </Text>
+                                 </children>
+                              </VBox>
                            </children>
                         </VBox>
                      </children>
@@ -150,7 +255,7 @@
                                              <children>
                                                 <VBox alignment="CENTER" spacing="5.0" GridPane.columnIndex="1">
                                                    <children>
-                                                      <VBox alignment="CENTER">
+                                                      <VBox fx:id="vBoxChronometer3" alignment="CENTER">
                                                          <children>
                                                             <Text strokeType="OUTSIDE" strokeWidth="0.0" text="Game:">
                                                                <font>
@@ -175,7 +280,7 @@
                                                    <children>
                                                       <HBox alignment="CENTER" spacing="20.0">
                                                          <children>
-                                                            <VBox alignment="CENTER" spacing="5.0">
+                                                            <VBox fx:id="vBoxTurns" alignment="CENTER" spacing="5.0">
                                                                <children>
                                                                   <HBox alignment="CENTER" spacing="5.0">
                                                                      <children>
@@ -235,7 +340,7 @@
                   </HBox>
                   <VBox spacing="80.0" GridPane.columnIndex="2">
                      <children>
-                        <VBox alignment="TOP_CENTER">
+                        <VBox fx:id="vBoxChronometer2" alignment="TOP_CENTER">
                            <children>
                               <Text strokeType="OUTSIDE" strokeWidth="0.0" text="White:">
                                  <font>
@@ -251,7 +356,7 @@
                         </VBox>
                         <VBox alignment="TOP_CENTER">
                            <children>
-                              <Text strokeType="OUTSIDE" strokeWidth="0.0" text="Captured pieces">
+                              <Text fx:id="textCapturedPieces2" strokeType="OUTSIDE" strokeWidth="0.0" text="Captured pieces">
                                  <font>
                                     <Font name="Lucida Console" size="18.0" />
                                  </font>
