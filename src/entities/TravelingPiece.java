@@ -56,7 +56,7 @@ public class TravelingPiece {
 	}
 	
 	public static Boolean pieceIsTraveling(Piece piece)
-		{ return travelingPiecesMap.containsKey(piece); }
+		{ return travelingPiecesMap.containsKey(piece) && getInstance(piece).isActive(); }
 
 	public static void runItOnEveryFrame() {
 		for (int n = 0; n < travelingPieces.size(); n++) {
@@ -107,8 +107,12 @@ public class TravelingPiece {
 	public Boolean isActive()
 		{ return isActive; }
 	
-	public static Boolean havePiecesTraveling()
-		{ return !travelingPieces.isEmpty(); }
+	public static Boolean havePiecesTraveling() {
+		for (TravelingPiece tp : travelingPieces)
+			if (tp.isActive())
+				return true;
+		return false;
+	}
 
 	public static void clear() {
 		travelingPiecesMap.clear();

@@ -20,7 +20,9 @@ public class ChessSprites {
 	public static List<PieceImage> pieceImages;
 	public static List<Image> boardTilesImages;
 	private static Boolean initialized = false;
-	
+	private static Image moved;
+	private static Image enPassant;
+
 	public static void initialize() {
 		if (!initialized) {
 			pieceImages = new ArrayList<>();
@@ -44,9 +46,17 @@ public class ChessSprites {
 			FindFile.findFile("./src/sprites/boards/","*.png").forEach(file ->
 				boardTilesImages.add(new Image(file.getAbsolutePath())));
 			initialized = true;
+			moved = Controller.removeBgColor(new Image("/sprites/moved.png"), Color.WHITE, 10);
+			enPassant = new Image("/sprites/enpassant.png");
 		}
 	}
 	
+	public static Image getMovedIcon()
+		{ return moved; }
+	
+	public static Image getEnPassantIcon()
+		{ return enPassant; }
+
 	private static Image canvasToImage(Canvas canvas) {
     WritableImage writableImage = new WritableImage((int)canvas.getWidth(), (int)canvas.getHeight());
    	return canvas.snapshot(new SnapshotParameters(), writableImage);

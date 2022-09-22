@@ -123,7 +123,7 @@
                                  </font>
                               </Text>
                               <FlowPane fx:id="flowPaneBlackCapturedPieces" />
-                              <VBox fx:id="vBoxEditHelper" prefHeight="200.0" prefWidth="100.0">
+                              <VBox fx:id="vBoxEditHelper">
                                  <children>
                                     <Text fill="#dc1ba9" strokeType="OUTSIDE" strokeWidth="0.0" text="Keyboard shortcuts">
                                        <font>
@@ -225,11 +225,29 @@
                                           <Font name="Lucida Console" size="14.0" />
                                        </font>
                                     </Text>
+                                    <Text fill="#e40e0e" strokeType="OUTSIDE" strokeWidth="0.0">
+                                       <font>
+                                          <Font name="Lucida Console" size="14.0" />
+                                       </font>
+                                    </Text>
+                                    <Text fill="#3212bf" strokeType="OUTSIDE" strokeWidth="0.0" text="Hold CTRL for mark">
+                                       <font>
+                                          <Font name="Lucida Console" size="14.0" />
+                                       </font>
+                                    </Text>
+                                    <Text fill="#3212bf" strokeType="OUTSIDE" strokeWidth="0.0" text="it as already moved">
+                                       <font>
+                                          <Font name="Lucida Console" size="14.0" />
+                                       </font>
+                                    </Text>
                                  </children>
                               </VBox>
                            </children>
                         </VBox>
                      </children>
+                     <GridPane.margin>
+                        <Insets top="10.0" />
+                     </GridPane.margin>
                   </VBox>
                   <HBox GridPane.columnIndex="1">
                      <children>
@@ -244,7 +262,7 @@
                                  <children>
                                     <HBox alignment="CENTER" prefHeight="120.0" spacing="100.0" VBox.vgrow="ALWAYS">
                                        <children>
-                                          <GridPane hgap="100.0" HBox.hgrow="ALWAYS">
+                                          <GridPane hgap="20.0" HBox.hgrow="ALWAYS">
                                             <columnConstraints>
                                               <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
                                               <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
@@ -269,11 +287,20 @@
                                                             </Text>
                                                          </children>
                                                       </VBox>
-                                                      <Button fx:id="buttonResetGame" mnemonicParsing="false" text="Reset game">
-                                                         <font>
-                                                            <Font name="Lucida Console" size="14.0" />
-                                                         </font>
-                                                      </Button>
+                                                      <HBox spacing="10.0">
+                                                         <children>
+                                                            <Button fx:id="buttonResetGame" mnemonicParsing="false" text="Reset game">
+                                                               <font>
+                                                                  <Font name="Lucida Console" size="14.0" />
+                                                               </font>
+                                                            </Button>
+                                                            <Button fx:id="buttonSaveBoard" mnemonicParsing="false" text="Save board">
+                                                               <font>
+                                                                  <Font name="Lucida Console" size="14.0" />
+                                                               </font>
+                                                            </Button>
+                                                         </children>
+                                                      </HBox>
                                                    </children>
                                                 </VBox>
                                                 <VBox alignment="CENTER" spacing="5.0">
@@ -329,6 +356,7 @@
                                  <children>
                                     <ImageView fx:id="imageViewBoardFrame" fitHeight="704.0" fitWidth="640.0" pickOnBounds="true" preserveRatio="true" />
                                     <Canvas fx:id="canvasBoard" height="576.0" width="512.0" />
+                                    <Canvas fx:id="canvasPieces" height="576.0" width="512.0" />
                                     <Canvas fx:id="canvasMovePiece" height="576.0" width="512.0" />
                                  </children>
                               </StackPane>
@@ -365,6 +393,9 @@
                            </children>
                         </VBox>
                      </children>
+                     <GridPane.margin>
+                        <Insets top="10.0" />
+                     </GridPane.margin>
                   </VBox>
                </children>
             </GridPane>

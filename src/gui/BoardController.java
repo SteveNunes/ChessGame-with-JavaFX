@@ -59,9 +59,9 @@ import util.Sounds;
 public class BoardController implements Initializable {
 
 	private static Boolean tryCatchOnConsole = true;
-	private final static String CHESS_DEFAULT = "Chess_default";
-	private final static String DEFAULT_STRING_BOARD = "RNBQKBNR,PPPPPPPP,........,........,........,........,pppppppp,rnbqkbnr";
-	private final static String DEFAULT_STRING_CLEAR_BOARD = "...QK...,........,........,........,........,........,........,...qk...";
+	private final static String DEFAULT_BOARD_NAME = "Chess_default";
+	private final static String DEFAULT_BOARD = "r0,n0,b0,q0,k0,b0,n0,r0!p0,p0,p0,p0,p0,p0,p0,p0!..,..,..,..,..,..,..,..!..,..,..,..,..,..,..,..!..,..,..,..,..,..,..,..!..,..,..,..,..,..,..,..!P0,P0,P0,P0,P0,P0,P0,P0!R0,N0,B0,Q0,K0,B0,N0,R0";
+	private final static String DEFAULT_CLEAR_BOARD = "..,..,..,Q0,K0,..,..,..!..,..,..,..,..,..,..,..!..,..,..,..,..,..,..,..!..,..,..,..,..,..,..,..!..,..,..,..,..,..,..,..!..,..,..,..,..,..,..,..!..,..,..,..,..,..,..,..!..,..,..,q0,k0,..,..,..";
 
 	private Boolean unknownError;
 	private Boolean soundEnabled;
@@ -78,6 +78,7 @@ public class BoardController implements Initializable {
 	private int maxPieceSprites;
 	private int movePieceDelay;
 	private int linearFiltering;
+	private String loadedBoardName;
 
 	private Cronometro cronometroGame;
 	private Cronometro cronometroBlack;
@@ -85,15 +86,13 @@ public class BoardController implements Initializable {
 	private Piece hoveredPiece;
 	private PieceColor cronoTurn;
 	private PieceColor cpuColor;
+	private PieceType editBoardPieceType;
 	private Position mouseHoverPos;
 	private ChessPlayMode chessPlayMode;
 	private FPSHandler fpsHandler;
 	private Board board;
 	private List<KeyCode> pressedKeys;
 	private IniFile configIniFile;
-	private String loadedBoardName;
-	private Character[][] loadedBoard;
-	private PieceType editBoardPieceType;
 
 	@FXML
 	private VBox vBoxMainWindow;
@@ -120,6 +119,8 @@ public class BoardController implements Initializable {
   @FXML
 	private Canvas canvasBoard;
   @FXML
+	private Canvas canvasPieces;
+  @FXML
 	private Canvas canvasMovePiece;
   @FXML
   private ImageView imageViewBoardFrame;
@@ -131,6 +132,8 @@ public class BoardController implements Initializable {
 	private Button buttonRedo;
   @FXML
   private Button buttonResetGame;
+  @FXML
+  private Button buttonSaveBoard;
   @FXML
   private Text textCronometroBlack;
   @FXML
@@ -206,7 +209,6 @@ public class BoardController implements Initializable {
 		configIniFile = IniFile.getNewIniFileInstance("./config.ini");
 		vBoxEditHelper.setVisible(false);
 		loadConfigsFromDisk();
-		setLinearFiltering();
 		ChessSprites.initialize();
 		addMenus();
 		addListeners();
@@ -219,57 +221,66 @@ public class BoardController implements Initializable {
 		List<CheckMenuItem> list = Arrays.asList(menuCheckItemLinearFilteringOff,
 			menuCheckItemLinearFilteringX1, menuCheckItemLinearFilteringX2, menuCheckItemLinearFilteringX3);
 		for (int n = 0; n < list.size(); n++)
-			if (list.get(n).isSelected())
+			if (list.get(n).isSelected()) {
 				canvasBoard.getGraphicsContext2D().setEffect(new BoxBlur(1, 1, linearFiltering = n));
+				canvasPieces.getGraphicsContext2D().setEffect(new BoxBlur(1, 1, linearFiltering = n));
+				canvasMovePiece.getGraphicsContext2D().setEffect(new BoxBlur(1, 1, linearFiltering = n));
+				canvasTurn.getGraphicsContext2D().setEffect(new BoxBlur(1, 1, linearFiltering = n));
+				updateStuffs();
+				updateBoard();
+				drawPieces();
+			}
 	}
 
 	private void addListeners() {
 		buttonUndo.setOnAction(e -> {
 			board.undoMove();
-			updateBoard();
+			updateDisableUndoButtons();
 		});
 		buttonRedo.setOnAction(e -> {
 			board.redoMove();
-			updateBoard();
+			updateDisableUndoButtons();
 		});
-		buttonResetGame.setOnAction(e -> {
-			if (menuCheckItemEditMode.isSelected()) {
-				try {
-					board.validateBoard();
-					String name = loadedBoardName;
-					Boolean ask = false;
-					while (name.equals(CHESS_DEFAULT) && !ask) {
-						name = Alerts.textPrompt("Text prompt", "Save board", null, "Enter the name for the new board");
-						if (name == null) {
-							name = CHESS_DEFAULT;
-							ask = true;
-						}
-						else if (name.equals(CHESS_DEFAULT))
-							error("You can't use this name");
-						else if (configIniFile.read("SAVED_BOARDS", name) != null)
-							error("This name is already in use for another board");
+		buttonSaveBoard.setOnAction(e -> {
+			try {
+				board.validateBoard();
+				String name = menuCheckItemEditMode.isSelected() && loadedBoardName != null ? loadedBoardName :
+					Alerts.textPrompt("Text prompt", "Save board", null, "Enter the name for the new board");
+				if (name == null)
+					return;
+				Boolean ask = false;
+				while (name.equals(DEFAULT_BOARD_NAME) && !ask) {
+					name = Alerts.textPrompt("Text prompt", "Save board", null, "Enter the name for the new board");
+					if (name == null) {
+						name = DEFAULT_BOARD_NAME;
+						ask = true;
 					}
-					if (configIniFile.read("SAVED_BOARDS", name) ==  null || !ask ||
-							Alerts.confirmation("Overwrite", "There already have a board with this name. Overwrite it?")) {
-						configIniFile.write("SAVED_BOARDS", loadedBoardName = name, convertCurrentBoardToString());
-						configIniFile.saveToDisk();
-						msg("Board saved", Color.GREEN);
-					}
+					else if (name.equals(DEFAULT_BOARD_NAME))
+						error("You can't use this name");
+					else if (configIniFile.read("SAVED_BOARDS", name) != null)
+						error("This name is already in use");
 				}
-				catch (Exception ex) {
-	    		playWav("error");
-	    		Alerts.error("Error", "Error on board layout:\n", ex.getMessage());
+				if (name != null && (configIniFile.read("SAVED_BOARDS", name) ==  null || !ask ||
+						Alerts.confirmation("Overwrite", "There already have a board with this name. Overwrite it?"))) {
+							configIniFile.write("SAVED_BOARDS", loadedBoardName = name, convertCurrentBoardToString());
+							configIniFile.saveToDisk();
+							msg("Board saved", Color.GREEN);
 				}
 			}
-			else {
-				Boolean wasGameOver = gameOver;
-				gameOver = true;
-				if (Alerts.confirmation("Restart game", "Are you sure?"))
-					resetGame();
-				else if (!wasGameOver) {
-					gameOver = false;
-					boardTimer();
-				}
+			catch (Exception ex) {
+    		playWav("error");
+    		Alerts.error("Error", "Error on board layout:\n", ex.getMessage());
+    		ex.printStackTrace();
+			}
+		});
+		buttonResetGame.setOnAction(e -> {
+			Boolean wasGameOver = gameOver;
+			gameOver = true;
+			if (Alerts.confirmation("Restart game", "Are you sure?"))
+				resetGame();
+			else if (!wasGameOver) {
+				gameOver = false;
+				boardTimer();
 			}
 		});
 		vBoxMainWindow.setOnKeyPressed(e -> keyHandler(e));
@@ -285,21 +296,45 @@ public class BoardController implements Initializable {
 	
 	private String convertCurrentBoardToString() {
 		StringBuilder sb = new StringBuilder();
-		for (Character[] chs : loadedBoard) {
-			if (!sb.isEmpty())
-				sb.append(",");
-			for (Character c : chs)
-				sb.append(c == null || c == ' ' ? '.' : c);
+		for (int y = 0; y < 8; y++) {
+			if (y > 0)
+				sb.append("!");
+			for (int x = 0; x < 8; x++) {
+				Piece piece = board.getPieceAt(new Position(x, y));
+				if (x > 0)
+					sb.append(",");
+				if (piece == null)
+					sb.append("..");
+				else {
+					sb.append(piece.getColor() == PieceColor.BLACK ?
+							Character.toLowerCase(piece.getType().getLet()) : piece.getType().getLet());
+					sb.append(piece.wasMoved() ? "1" : "0");
+				}
+			}
 		}
 		return sb.toString();
 	}
 
-	private void loadBoardFromString(String board) {
-		loadedBoard = new Character[8][8];
-		String[] split = board.split(",");
-		for (int y = 0; y < 8; y++)
-			for (int x = 0; x < 8; x++)
-				loadedBoard[y][x] = split[y].charAt(x) == '.' ? null : split[y].charAt(x);
+	private void loadBoardFromString(String boardName) {
+		String boardString = configIniFile.read("SAVED_BOARDS", boardName) != null ?
+				configIniFile.getLastReadVal() : DEFAULT_BOARD;
+		gameOver = true;
+		board.resetBoard();
+		String[] split = boardString.split("!");
+		for (int y = 0; y < 8; y++) {
+			String[] split2 = split[y].split(",");
+			for (int x = 0; x < 8; x++) {
+				String s = split2[x];
+				if (s != null && !s.equals("..")) {
+					PieceColor color = Character.toUpperCase(s.charAt(0)) == s.charAt(0) ?
+							PieceColor.WHITE : PieceColor.BLACK;
+					PieceType type = PieceType.getTypeFromLet(s.charAt(0));
+					Piece piece = board.addNewPiece(new Position(x, y), type, color);
+					if (s.charAt(0) != '0')
+						piece.setMovedTurns(1);
+				}
+			}
+		}
 	}
 	
 	private void updateCheckMenuItensBasedOnLastSelected(List<CheckMenuItem> checkMenuItemList, Consumer<?> consumerWhenSelect) {
@@ -362,6 +397,7 @@ public class BoardController implements Initializable {
 					}
 					checkMenuItem.setSelected(true);
 					updateBoard();
+					drawPieces();
 				});
 				checkMenuItem.setGraphic(ChessSprites.getBoardTileImageView(maxBoardsSprites, xx, 0, 64, 64));
 				if (x == 0)
@@ -422,21 +458,20 @@ public class BoardController implements Initializable {
 				if (name == null)
 					return;
 				name.replace(' ', '_');
-				if (name.equals(CHESS_DEFAULT))
+				if (name.equals(DEFAULT_BOARD_NAME))
 					error("You can't use this name");
 				else if (configIniFile.read("SAVED_BOARDS", name) != null)
-					error("This name is already in use for another board");
+					error("This name is already in use");
 				else
 					ok = true;
 			}
 			while (name != null && !ok);
 			if (ok) {
-				configIniFile.write("SAVED_BOARDS", name, DEFAULT_STRING_CLEAR_BOARD );
+				configIniFile.write("SAVED_BOARDS", name, DEFAULT_CLEAR_BOARD );
 				configIniFile.saveToDisk();
 				loadedBoardName = name;
 				reloadBoard(loadedBoardName = name);
 				setEditBoardMenu();
-				updateBoard();
 				Alerts.information("Information", "Board successfully created");
 			}
 		});
@@ -448,20 +483,20 @@ public class BoardController implements Initializable {
 			buttonResetGame.setText(menuCheckItemEditMode.isSelected() ? "Save board" : "Reset game");
 			if (menuCheckItemEditMode.isSelected())
 				boardTimer();
+			buttonResetGame.setVisible(!menuCheckItemEditMode.isSelected());
 		});
 		for (int n = -1; n < configIniFile.getItemList("SAVED_BOARDS").size(); n++) {
-			String item = n == -1 ? CHESS_DEFAULT : configIniFile.getItemList("SAVED_BOARDS").get(n);
+			String item = n == -1 ? DEFAULT_BOARD_NAME : configIniFile.getItemList("SAVED_BOARDS").get(n);
 			CheckMenuItem checkMenuLoadBoard = new CheckMenuItem(item.replace('_', ' '));
 			MenuItem checkMenuRenameBoard = new CheckMenuItem(item.replace('_', ' '));
 			MenuItem checkMenuRemoveBoard = new CheckMenuItem(item.replace('_', ' '));
 			final int x = n;
 			checkMenuLoadBoard.setSelected(item.equals(loadedBoardName));
 			checkMenuLoadBoard.setOnAction(ex -> {
-				loadBoardFromString(x == -1 ? DEFAULT_STRING_BOARD : configIniFile.read("SAVED_BOARDS", item));
+				loadBoardFromString(x == -1 ? DEFAULT_BOARD_NAME : item);
 				reloadBoard(loadedBoardName = item);
 				for (MenuItem menu : menuLoadBoard.getItems())
 					((CheckMenuItem)menu).setSelected(menu.getText().equals(item.replace('_', ' ')));
-				updateBoard();
 			});
 			menuLoadBoard.getItems().add(checkMenuLoadBoard);
 			if (n > -1) {
@@ -473,10 +508,10 @@ public class BoardController implements Initializable {
 						if (newName == null)
 							return;
 						newName.replace(' ', '_');
-						if (newName.equals(CHESS_DEFAULT))
+						if (newName.equals(DEFAULT_BOARD_NAME))
 							error("You can't use this name");
 						else if (configIniFile.read("SAVED_BOARDS", newName) != null)
-							error("This name is already in use for another board");
+							error("This name is already in use");
 						else
 							ok = true;
 					}
@@ -503,7 +538,7 @@ public class BoardController implements Initializable {
 				menuRemoveBoard.setDisable(menuRemoveBoard.getItems().isEmpty());
 			}
 		}
-		menuLoadBoard.getItems().sort((a, b) -> a.getText().replace(' ', '_').equals(CHESS_DEFAULT) ? -Integer.MAX_VALUE : a.getText().compareTo(b.getText()));
+		menuLoadBoard.getItems().sort((a, b) -> a.getText().replace(' ', '_').equals(DEFAULT_BOARD_NAME) ? -Integer.MAX_VALUE : a.getText().compareTo(b.getText()));
 		menuRenameBoard.getItems().sort((a, b) -> a.getText().compareTo(b.getText()));
 		menuRemoveBoard.getItems().sort((a, b) -> a.getText().compareTo(b.getText()));
 	}
@@ -518,6 +553,7 @@ public class BoardController implements Initializable {
 				boardPngTypeA = Integer.parseInt(split[1]);
 				boardPngTypeB = Integer.parseInt(split[2]);
 				updateBoard();
+				drawPieces();
 			});
 			menuLoadSpriteSetup.getItems().add(menuItem);
 		}
@@ -525,9 +561,7 @@ public class BoardController implements Initializable {
 	}
 
 	private void setPieceSprite(int n) {
-		canvasMovePiece.getGraphicsContext2D().clearRect(0, 0, 512, 576);
 		piecePngType = n;
-		updateBoard();
   	setTitle();
 		for (int x = 0; x < maxPieceSprites; x++)
 			((CheckMenuItem)menuPieceSprite.getItems().get(x + 1)).setSelected(x == piecePngType);
@@ -546,7 +580,6 @@ public class BoardController implements Initializable {
 			((CheckMenuItem)menuBoardOddTilesSprite.getItems().get(n)).setSelected(boardPngTypeA == n);
 			((CheckMenuItem)menuBoardEvenTilesSprite.getItems().get(n)).setSelected(boardPngTypeB == n);
 		}
-		updateBoard();
   	setTitle();
 	}
 
@@ -621,6 +654,7 @@ public class BoardController implements Initializable {
 						((CheckMenuItem)checkMenuItem).setSelected(n++ == boardPngTypeA);
 		  	}
 				updateBoard();
+		  	drawPieces();
 		  }
 	  	else {
 	  		if ((cpuPlaySpeed += inc * 500) > 5000)
@@ -634,16 +668,14 @@ public class BoardController implements Initializable {
 	}
 
 	private void updatePiecePreview() {
-		GraphicsContext gc = canvasTurn.getGraphicsContext2D();
 		PieceImage pieceImage = ChessSprites.pieceImages.get(piecePngType);
 		int[] p;
 		if (menuCheckItemEditMode.isSelected())
 			p = ChessSprites.getXYFromPieceInfo(editBoardPieceType, PieceColor.WHITE, piecePngType);
 		else
 			p = ChessSprites.getXYFromPieceInfo(PieceType.PAWN, board.getCurrentColorTurn(), piecePngType);
-		gc.clearRect(0, 0, 48, 80);
-		gc.strokeRect(0, 0, 48, 80);
-		gc.drawImage(ChessSprites.getPieceImageSet(piecePngType), p[0], p[1], pieceImage.getSourceW(), pieceImage.getSourceH(), 0, 80 - pieceImage.getTargetH() * 0.7, pieceImage.getTargetW() * 0.7, pieceImage.getTargetH() * 0.7);
+		clearCanvas(canvasTurn, 0, 0, 48, 80);
+		 canvasTurn.getGraphicsContext2D().drawImage(ChessSprites.getPieceImageSet(piecePngType), p[0], p[1], pieceImage.getSourceW(), pieceImage.getSourceH(), 0, 80 - pieceImage.getTargetH() * 0.7, pieceImage.getTargetW() * 0.7, pieceImage.getTargetH() * 0.7);
 	}
 
 	public void init() {
@@ -651,6 +683,7 @@ public class BoardController implements Initializable {
 		resumirCronometro(null);
 		resetGame();
 	  boardTimer();
+		setLinearFiltering();
 	}
 	
 	private void setTitle() {
@@ -662,15 +695,14 @@ public class BoardController implements Initializable {
 	}
 	
 	private void reloadBoard(String boardName) {
-		if (configIniFile.read("SAVED_BOARDS", boardName) == null)
-			boardName = CHESS_DEFAULT;
+		if (boardName == null || configIniFile.read("SAVED_BOARDS", boardName) == null)
+			boardName = DEFAULT_BOARD_NAME;
 		try {
-			if (boardName.equals(CHESS_DEFAULT))
-				loadBoardFromString(DEFAULT_STRING_BOARD);
-			else
-				loadBoardFromString(configIniFile.read("SAVED_BOARDS", boardName));
 			board.reset();
-			board.setBoard(loadedBoard);
+			if (boardName.equals(DEFAULT_BOARD_NAME))
+				loadBoardFromString(boardName);
+			else
+				loadBoardFromString(boardName);
 		}		
 		catch (Exception e) {}
 	}
@@ -692,7 +724,6 @@ public class BoardController implements Initializable {
 			}
 			if (menuCheckItemSwapBoard.isSelected() != board.isSwappedBoard())
 				board.swapSides();
-		  updateBoard();
 			buttonUndo.setDisable(true);
 			buttonRedo.setDisable(true);
 			resumirCronometro(null);
@@ -704,6 +735,8 @@ public class BoardController implements Initializable {
 				cpuPlay();
 			}
 			justStarted = false;
+			updateBoard();
+			updateStuffs();
 		}
 		catch (Exception e) {
 			Program.getMainStage().close();
@@ -715,53 +748,48 @@ public class BoardController implements Initializable {
 		}
 	}
 
-	private void cpuPlay() {
+	private void updateDisableUndoButtons() {
+		buttonRedo.setDisable(cronometroGame.isPausado() || !board.canRedoMove());
+		buttonUndo.setDisable(cronometroGame.isPausado() || !board.canUndoMove());
+	}
+
+	private void cpuPlay() { 
 		if (board.isCpuTurn() && cpuPlay == 0)
-			cpuPlay = System.currentTimeMillis() + (long)cpuPlaySpeed;
-	  updateBoard();
+			cpuPlay = System.currentTimeMillis() + (long)cpuPlaySpeed * (board.isChecked() ? 2 : 1);
 	}
 
 	private void boardTimer() {
-		Boolean disableControls = !gameOver && !menuCheckItemEditMode.isSelected() &&
-				(TravelingPiece.havePiecesTraveling() || (!board.canRedoMove() && board.isCpuTurn()));
-		if (disableControls != disabledControlsWhileIsCpuTurn) {
-			hBoxUndoControls.setDisable(disableControls);
-			menuBar.setDisable(disableControls);
-			buttonResetGame.setDisable(disableControls);
-			disabledControlsWhileIsCpuTurn = disableControls;
-		}
 		if (clearMsg != 0 && System.currentTimeMillis() >= clearMsg) {
 			clearMsg = 0;
 			msg("");
 		}
-		if (TravelingPiece.havePiecesTraveling()) {
-			TravelingPiece.runItOnEveryFrame();
-			canvasMovePiece.getGraphicsContext2D().clearRect(0, 0, 512, 576);
-			for (TravelingPiece travelingPiece : TravelingPiece.getTravelingPieces())
-				if (!travelingPiece.isActive()) {
-					if (travelingPiece.getPiece() == board.getSelectedPiece())
-						movePieceTo(travelingPiece.getTargetPosition());
-				}
-				else {
-					PieceImage pieceImage = ChessSprites.pieceImages.get(piecePngType);
-					int[] p = ChessSprites.getXYFromPieceInfo(travelingPiece.getPiece(), piecePngType);
-					canvasMovePiece.getGraphicsContext2D().drawImage(ChessSprites.getPieceImageSet(piecePngType), p[0], p[1], pieceImage.getSourceW(), pieceImage.getSourceH(), travelingPiece.getSourceX() + 32 - pieceImage.getTargetW() / 2, travelingPiece.getSourceY() + 128 - pieceImage.getTargetH(), pieceImage.getTargetW(), pieceImage.getTargetH());
-				}
-			if (!TravelingPiece.havePiecesTraveling()) {
-				canvasMovePiece.getGraphicsContext2D().clearRect(0, 0, 512, 576);
-				fpsHandler.setCPS(30);
-			  checkIfPieceIsPromoted();
-			}
-		}
+		if (TravelingPiece.havePiecesTraveling())
+			clearCanvas(canvasMovePiece, 0, 0, 512, 576);
 		else
-			updateBoard();
+			drawPieces();
+		TravelingPiece.runItOnEveryFrame();
+		for (TravelingPiece travelingPiece : TravelingPiece.getTravelingPieces())
+			if (!travelingPiece.isActive()) {
+				if (travelingPiece.getPiece() == board.getSelectedPiece())
+					movePieceTo(travelingPiece.getTargetPosition());
+			}
+			else {
+				PieceImage pieceImage = ChessSprites.pieceImages.get(piecePngType);
+				int[] p = ChessSprites.getXYFromPieceInfo(travelingPiece.getPiece(), piecePngType);
+				canvasMovePiece.getGraphicsContext2D().drawImage(ChessSprites.getPieceImageSet(piecePngType), p[0], p[1], pieceImage.getSourceW(), pieceImage.getSourceH(), travelingPiece.getSourceX() + 32 - pieceImage.getTargetW() / 2, travelingPiece.getSourceY() + 128 - pieceImage.getTargetH(), pieceImage.getTargetW(), pieceImage.getTargetH());
+			}
+		if (!TravelingPiece.havePiecesTraveling()) {
+			clearCanvas(canvasMovePiece, 0, 0, 512, 576);
+			fpsHandler.setCPS(30);
+		  checkIfPieceIsPromoted();
+		}
 		textCronometroGame.setText(cronometroGame.getDuracaoStr().substring(0, 10));
 		textCronometroBlack.setText(cronometroBlack.getDuracaoStr().substring(0, 10));
 		textCronometroWhite.setText(cronometroWhite.getDuracaoStr().substring(0, 10));
-		if (!unknownError && !gameOver && !board.canRedoMove() && board.isCpuTurn() &&
+		if (!unknownError && !gameOver && !board.canRedoMove() && board.isCpuTurn() && cpuPlay > 0 &&
 				!menuCheckItemEditMode.isSelected() && System.currentTimeMillis() >= cpuPlay) {
 			if (board.getChessAI().cpuSelectedAPiece()) {
-  			cpuPlay += 100000;
+				cpuPlay = System.currentTimeMillis() + (long)cpuPlaySpeed;
   			startPieceTravel(board.getChessAI().cpuSelectedTargetPosition());
 			}
 			else {
@@ -771,7 +799,6 @@ public class BoardController implements Initializable {
 				playWav("select");
 				try {
 					board.getChessAI().doCpuSelectAPiece();
-					updateBoard();
 					cpuPlay = System.currentTimeMillis() + (long)cpuPlaySpeed;
 				}
 				catch (Exception e) {
@@ -796,11 +823,6 @@ public class BoardController implements Initializable {
 		}
 	}
 
-	private void checkUndoButtons() {
-		buttonRedo.setDisable(!board.canRedoMove());
-		buttonUndo.setDisable(!board.canUndoMove());
-	}
-	
 	private void error(String text) {
 		msg(text, Color.RED);
 		playWav("error");
@@ -810,7 +832,7 @@ public class BoardController implements Initializable {
 		Text txt = new Text(text);
 		txt.setFont(Font.font("Lucida Console", 20));
 		GraphicsContext gc = canvasMovePiece.getGraphicsContext2D();
-		gc.clearRect(0, 0, 512, 576);
+		clearCanvas(gc, 0, 0, 512, 576);
 		if (!text.isEmpty()) {
 			gc.setFill(Color.BLUE);
 			gc.fillRect(canvasMovePiece.getWidth() / 2 - txt.getLayoutBounds().getWidth() / 2 - 13, 10, txt.getLayoutBounds().getWidth() + 26, 38);
@@ -827,24 +849,39 @@ public class BoardController implements Initializable {
 	private void msg(String text)
 		{ msg(text, Color.BLACK); }
 	
-	private void updateBoard() {
-		GraphicsContext gc = canvasBoard.getGraphicsContext2D();
+	private void updateStuffs() {
+		Boolean disableControls = !gameOver && !menuCheckItemEditMode.isSelected() &&
+				(TravelingPiece.havePiecesTraveling() || (!board.canRedoMove() && board.isCpuTurn()));
+		if (disableControls != disabledControlsWhileIsCpuTurn) {
+			hBoxUndoControls.setDisable(disableControls);
+			menuBar.setDisable(disableControls);
+			buttonResetGame.setDisable(disableControls);
+			buttonSaveBoard.setDisable(disableControls);
+			disabledControlsWhileIsCpuTurn = disableControls;
+		}
+		updateDisableUndoButtons();
+		updatePiecePreview();
+		updateCapturedPieces();
+		textTurn.setText("" + board.getTurns());
+		gameOver();
+	}
+	
+	private void clearCanvas(GraphicsContext gc, int x, int y, int w, int h) {
 		gc.setEffect(null);
-		gc.clearRect(0, 0, 512, 576);
+		gc.clearRect(x, y, w, h);
 		gc.setEffect(new BoxBlur(1, 1, linearFiltering));
+	}
+	
+	private void clearCanvas(Canvas canvas, int x, int y, int w, int h)
+		{ clearCanvas(canvas.getGraphicsContext2D(), x, y, w, h); }
+	
+	private void updateBoard() {
+		clearCanvas(canvasBoard, 0, 0, 512, 576);
 		if (board.pieceIsSelected())
 			hoveredPiece = null;
 		for (int y = 0; y < 8; y++)
 			for (int x = 0; x < 8; x++)
-				gc.drawImage(ChessSprites.boardTilesImages.get((x + y) % 2 == 0 ? boardPngTypeA : boardPngTypeB), x * 150, y * 150, 150, 150, x * 64, y * 64 + 64, 64, 64);
-		for (int y = 0; y < 8; y++)
-			for (int x = 0; x < 8; x++)
-				drawTile(x, y);
-		updatePiecePreview();
-		checkUndoButtons();
-		updateCapturedPieces();
-		textTurn.setText("" + board.getTurns());
-		gameOver();
+				canvasBoard.getGraphicsContext2D().drawImage(ChessSprites.boardTilesImages.get((x + y) % 2 == 0 ? boardPngTypeA : boardPngTypeB), x * 150, y * 150, 150, 150, x * 64, y * 64 + 64, 64, 64);
 	}
 	
 	private void updateCapturedPieces() {
@@ -870,60 +907,90 @@ public class BoardController implements Initializable {
 			}
 	}
 	
-	private void drawTile(int x, int y) {
-		GraphicsContext gc = canvasBoard.getGraphicsContext2D();
-		Position pos = new Position(x, y);
-
-		Color rectangleColor = null;
-		Piece piece = board.getPieceAt(pos);
-		Boolean justHovered = hoveredPiece != null;
-		Piece selectedPiece = justHovered ? hoveredPiece : board.getSelectedPiece();
-
-		if (!menuCheckItemEditMode.isSelected()) {
-			if (!TravelingPiece.havePiecesTraveling())
-				if (piece != null) {
-					if (board.pieceCanDoEnPassant(selectedPiece) &&
-							board.getEnPassantPawn() == piece)
-								rectangleColor = Color.ORANGERED;
-					if (board.isChecked() &&
-							(piece.is(PieceType.KING, board.getCurrentColorTurn()) ||
-							!board.getPieceListByColor(piece.getOpponentColor(),
-								p -> p.isKing() && piece.couldCapture(p)).isEmpty()))
-									rectangleColor = Color.ORANGE; // Marca o rei com retângulo laranja, se ele estiver em check. Também marca a pedra que está ameaçando o rei.
-				}
-				if (board.pieceIsSelected()) { 
-					if (selectedPiece.equals(piece)) // Marca com retângulo amarelo a pedra selecionada atualmente
-						rectangleColor = Color.YELLOW;
-					else if ((!board.isCpuTurn() && pos.equals(mouseHoverPos)) ||
-						(board.isCpuTurn() && board.pieceIsSelected() &&
-						pos.equals(board.getChessAI().cpuSelectedTargetPosition())))
-							rectangleColor = Color.RED;
-					else if (selectedPiece.canMoveToPosition(pos)) // Marca com retângulo verde a casa onde a pedra selecionada pode ir (Se for casa onde houver uma pedra adversária, marca em vermelho)
-						rectangleColor = !board.isCpuTurn() && board.getPieceAt(pos) != null ? Color.RED : Color.LIGHTGREEN;
-				}
-			
-			if (rectangleColor != null) {
-				gc.setStroke(rectangleColor);
-				for (int n = 0; n < 5; n++)
-					gc.strokeRect(x * 64 + n, y * 64 + 64 + n, 64 - n * 2, 64 - n * 2);
-			}
-		}
-
+	private Boolean boardWasValidated() {
+		if (!cronometroGame.isPausado())
+			return true;
+		try
+			{ board.validateBoard(); }
+		catch (Exception e)
+			{ return false; }
+		return true;
+	}
+	
+	private void drawPieces() {
+		GraphicsContext gc = canvasPieces.getGraphicsContext2D();
+		clearCanvas(gc, 0, 0, 512, 576);
+		Boolean ok;
 		Boolean blink = (fpsHandler.getElapsedFrames() / 2) % 2 == 0;
-		if (piece != null && !TravelingPiece.pieceIsTraveling(piece)) {
+		Boolean justHovered = !board.isCpuTurn() && hoveredPiece != null;
+		Piece selectedPiece = justHovered ? hoveredPiece : board.getSelectedPiece();
+		Position pos = new Position();
+		Color rectangleColor;
+		int lift = 0;
+
+		for (int y = 0; y < 8; y++)
+			for (int x = 0; x < 8; x++) {
+				pos.setPosition(x, y);
+				Piece piece = board.getPieceAt(pos);
+				
+				if (!menuCheckItemEditMode.isSelected() && !TravelingPiece.havePiecesTraveling()) {
+					rectangleColor = null;
+					if (piece != null) {
+						if (board.pieceCanDoEnPassant(selectedPiece) &&
+								board.getEnPassantPawn() == piece)
+									rectangleColor = Color.ORANGERED;
+						if (boardWasValidated() && board.isChecked() && 
+								(piece.is(PieceType.KING, board.getCurrentColorTurn()) ||
+								!board.getPieceListByColor(piece.getOpponentColor(),
+									p -> p.isKing() && piece.couldCapture(p)).isEmpty()))
+										rectangleColor = Color.ORANGE; // Marca o rei com retângulo laranja, se ele estiver em check. Também marca a pedra que está ameaçando o rei.
+					}
+					if (board.pieceIsSelected() && (board.getSelectedPiece() == piece ||
+							board.getSelectedPiece().canMoveToPosition(pos)))
+								// Marca com retângulo amarelo a pedra selecionada atualmente
+								if (board.getSelectedPiece() == piece)
+									rectangleColor = Color.YELLOW;
+								// Marca com retângulo Vermelho o tile apontado, desde que seja um dos tiles que a pedra selecionada pode se mover
+								else if ((!board.isCpuTurn() && pos.equals(mouseHoverPos)) ||
+									(board.isCpuTurn() && board.pieceIsSelected() &&
+									pos.equals(board.getChessAI().cpuSelectedTargetPosition())))
+										rectangleColor = Color.RED;
+								else // Marca com retângulo verde a casa onde a pedra selecionada pode ir (Se for casa onde houver uma pedra adversária, marca em vermelho)
+									rectangleColor = !board.isCpuTurn() && board.getPieceAt(pos) != null ? Color.RED : Color.LIGHTGREEN;
+				
+					if (rectangleColor != null) {
+						gc.setStroke(rectangleColor);
+						for (int n = 0; n < 5; n++)
+							gc.strokeRect(x * 64 + n, y * 64 + 64 + n, 64 - n * 2, 64 - n * 2);
+					}
+				}
+		
+				PieceImage pieceImage = ChessSprites.pieceImages.get(piecePngType);
+				ok = piece != null && (piece == selectedPiece && (menuCheckItemEditMode.isSelected() || piece.getColor() == board.getCurrentColorTurn()));
+				lift = menuCheckItemHoverLift.isSelected() && ok ? 8 : 0;
+				
+				if (piece != null && !TravelingPiece.pieceIsTraveling(piece)) {
 					int[] p = ChessSprites.getXYFromPieceInfo(piece, piecePngType);
-					PieceImage pieceImage = ChessSprites.pieceImages.get(piecePngType);
-					Boolean ok = (piece == selectedPiece && (menuCheckItemEditMode.isSelected() || piece.getColor() == board.getCurrentColorTurn()));
-					int lift = menuCheckItemHoverLift.isSelected() && ok ? 8 : 0;
 					if (ok && (menuCheckItemTransparent.isSelected() || 
 							(menuCheckItemHoverBlink.isSelected() && !blink)))
 								gc.setGlobalAlpha(0.5);
 					gc.drawImage(ChessSprites.getPieceImageSet(piecePngType), p[0], p[1], pieceImage.getSourceW(), pieceImage.getSourceH(), x * 64 + 32 - pieceImage.getTargetW() / 2, y * 64 + 128 - pieceImage.getTargetH() - lift, pieceImage.getTargetW(), pieceImage.getTargetH());
 					gc.setGlobalAlpha(1);
-		}
+				}
+
+				if (menuCheckItemEditMode.isSelected() && piece != null) {
+					if (piece.isPawn() && piece.wasMoved() &&
+							(piece.getPosition().getY() == 3 || piece.getPosition().getY() == 4))
+								gc.drawImage(ChessSprites.getEnPassantIcon(), x * 64, y * 64 + 64);
+					else if (piece.wasMoved())
+						gc.drawImage(ChessSprites.getMovedIcon(), x * 64, y * 64 + 64);
+				}
+			}
 	}
 
 	private void canvasBoardMoved(int row, int column) {
+		if (!boardWasValidated())
+			return;
     if (menuCheckItemEditMode.isSelected() || (!TravelingPiece.havePiecesTraveling() &&
     		!unknownError && !board.isGameOver() && !gameOver && !board.isCpuTurn())) {
 			  	Position position = new Position(column, row - 1);
@@ -935,6 +1002,8 @@ public class BoardController implements Initializable {
 	}
 
 	private void canvasBoardClicked(int row, int column, int button) {
+		if (!menuCheckItemEditMode.isSelected() && !boardWasValidated())
+			return;
     if (menuCheckItemEditMode.isSelected() || (!TravelingPiece.havePiecesTraveling() &&
     		!unknownError && !board.isGameOver() && !board.isCpuTurn())) {
 		    	Position position = new Position(column, row - 1);
@@ -943,23 +1012,20 @@ public class BoardController implements Initializable {
 	}
 
 	private void boardMouseHover(Piece piece, Position pos) {
-    if (!board.pieceIsSelected() && (hoveredPiece == null || piece != hoveredPiece)) {
-					if (piece != null && (menuCheckItemEditMode.isSelected() || !piece.isStucked()))
-		  			hoveredPiece = piece;
-					else
-						hoveredPiece = null;
-					updateBoard();
+		if (!menuCheckItemEditMode.isSelected() && !boardWasValidated())
+			return;
+    if (hoveredPiece == null || piece != hoveredPiece) {
+			if (piece != null && (menuCheckItemEditMode.isSelected() || !piece.isStucked()))
+  			hoveredPiece = piece;
+			else
+				hoveredPiece = null;
     }
-    if (mouseHoverPos == null || !mouseHoverPos.equals(pos)) {
-			mouseHoverPos = new Position(pos);
-			updateBoard();
-    }
+		mouseHoverPos = new Position(pos);
 	}
 
 	private void boardClick(Piece piece, Position pos, int button) {
 		if (menuCheckItemEditMode.isSelected()) {
 			if (board.getPieceAt(pos) != null) {
-				loadedBoard[pos.getY()][pos.getX()] = null;
 				board.removePiece(piece);
 				editBoardPieceType = piece.getType();
 				updatePiecePreview();
@@ -968,19 +1034,21 @@ public class BoardController implements Initializable {
 			else {
 				try {
 					Piece p = board.addNewPiece(pos, editBoardPieceType, button == 0 ? PieceColor.WHITE : PieceColor.BLACK);
-					loadedBoard[pos.getY()][pos.getX()] = button == 0 ? p.getType().getLet() : Character.toLowerCase(p.getType().getLet());
 					playWav("move");
+					p.setMovedTurns(0);
+					if (pressedKeys.contains(KeyCode.CONTROL))
+						p.setMovedTurns(1);
 				}
 				catch (Exception e) {
 					playWav("error");
 	    		Alerts.error("Error", "Error on board layout:\n", e.getMessage());
+	    		e.printStackTrace();
 				}
 			}
 
-			updateBoard();
 			return;
 		}
-  	if (board.isGameOver() || gameOver) {
+  	if (!boardWasValidated() || board.isGameOver() || gameOver) {
     	error("Reset the game");
   		return;
   	}
@@ -989,12 +1057,12 @@ public class BoardController implements Initializable {
   		return;
   	try {
     	if (board.pieceIsSelected()) {
-    		if (board.getSelectedPiece().isSamePosition(pos))
+    		if (board.getSelectedPiece().getPosition().equals(pos))
     			pieceWasUnselected();
     		else if (board.getPieceAt(pos) != null && board.getSelectedPiece().isSameColorOf(board.getPieceAt(pos)))
     			pieceWasUnselected(pos);
     		else if (!board.checkIfCanMovePieceTo(pos))
-    			board.movePieceTo(pos);
+    			board.movePieceTo(pos, true);
     		else 
     			startPieceTravel(pos);
     	}
@@ -1012,7 +1080,6 @@ public class BoardController implements Initializable {
 				ex.printStackTrace();
 			}
 		}
-	  updateBoard();
 	}
 
 	private void startPieceTravel(Position targetPosition) {
@@ -1020,7 +1087,7 @@ public class BoardController implements Initializable {
 		Position rookTargetPositon = null;
 		Board b = board.newClonedBoard();
 		try
-			{ board.movePieceTo(targetPosition, false); }
+			{ board.movePieceTo(targetPosition, true); }
 		catch (Exception e) {}
 		if (board.lastMoveWasCastling()) {
 			rook = board.getLastCastlingPiece();
@@ -1032,16 +1099,14 @@ public class BoardController implements Initializable {
 		TravelingPiece.add(board.getSelectedPiece(), targetPosition, movePieceDelay);
 		playWav("clicked");
 		fpsHandler.setCPS(120);
-		updateBoard();
+		drawPieces();
 	}
 
 	private void movePieceTo(Position pos) {
 		Boolean wasCheckedBefore = board.isChecked();
 		try {
-			if (!board.isCpuTurn()) {
+			if (!board.isCpuTurn())
 				board.movePieceTo(pos);
-				updateBoard();
-			}
 			else {
 				board.getChessAI().doCpuMoveSelectedPiece();
 				if (board.pawnWasPromoted()) {
@@ -1055,7 +1120,6 @@ public class BoardController implements Initializable {
 					}
 	    		playWav("promotion");
 	  			cpuPlay = System.currentTimeMillis() + (long)cpuPlaySpeed;
-					updateBoard();
 				}
 			}
 		}
@@ -1084,11 +1148,14 @@ public class BoardController implements Initializable {
 				cronoTurn = null;
 			}
 		}
+		updateStuffs();
+		cpuPlay = 0;
 		cpuPlay();
-		cpuPlay += cpuPlaySpeed;
 	}
 	
 	private Boolean gameOver() {
+		if (!boardWasValidated())
+			return false;
 		if (cronometroGame.getDuracao() == 0)
 			return false;
 		if (!board.isGameOver() || gameOver || TravelingPiece.havePiecesTraveling())
@@ -1105,11 +1172,6 @@ public class BoardController implements Initializable {
 			gameOver = true;
 		}
 		else {
-			System.out.println("board.isDrawByFiftyMoveRule(): " + board.isDrawByFiftyMoveRule());
-			System.out.println("board.isDrawByStalemate(): " + board.isDrawByStalemate());
-			System.out.println("board.isDrawByInsufficientMatingMaterial(): " + board.isDrawByInsufficientMatingMaterial());
-			System.out.println("board.isDrawByBareKings(): " + board.isDrawByBareKings());
-			System.out.println("board.isDrawByThreefoldRepetition(): " + board.isDrawByThreefoldRepetition());
 			playWav("loose");
 			cronometroBlack.setPausado(true);
 			cronometroWhite.setPausado(true);
@@ -1187,7 +1249,7 @@ public class BoardController implements Initializable {
 
 	private void openPromoteWindow() {
 		int width = 300;
-		int height = 116;
+		int height = 158;
 		Group group = new Group(); 
 		Scene scene = new Scene(group, width, height, Color.valueOf("#EEEEEE"));
 		Stage stage = new Stage();
@@ -1210,7 +1272,7 @@ public class BoardController implements Initializable {
 		hBox.setAlignment(Pos.TOP_CENTER);
 		for (PieceType type : Arrays.asList(PieceType.BISHOP, PieceType.KNIGHT, PieceType.QUEEN, PieceType.ROOK)) {
 			Button button = new Button();
-			button.setGraphic(ChessSprites.getPieceImage(type, board.getCurrentColorTurn(), piecePngType, 42, 42));
+			button.setGraphic(ChessSprites.getPieceImage(type, board.getCurrentColorTurn(), piecePngType, 42, 84));
 			button.setOnAction(e -> {
 				try
 					{ board.promotePawnTo(type); }
@@ -1224,53 +1286,52 @@ public class BoardController implements Initializable {
     		playWav("promotion");
     		if (board.isCpuTurn())
     			cpuPlay = System.currentTimeMillis() + (long)cpuPlaySpeed * 2;
-				updateBoard();
 			});
 			hBox.getChildren().add(button);
 		}
-		stage.initOwner(canvasBoard.getScene().getWindow());
+		stage.initOwner(canvasPieces.getScene().getWindow());
 		stage.initModality(Modality.WINDOW_MODAL);
 		stage.setTitle("Promotion");
 		stage.showAndWait();
 	}
 	
 	public void loadConfigsFromDisk() {
-		try {
-			loadedBoardName = configIniFile.read("CONFIG", "loadedBoardName");
-			movePieceDelay = Integer.parseInt(configIniFile.read("CONFIG", "movePieceDelay"));
-			piecePngType = Integer.parseInt(configIniFile.read("CONFIG", "piecePngType"));
-			boardPngTypeA = Integer.parseInt(configIniFile.read("CONFIG", "boardPngTypeA"));
-			boardPngTypeB = Integer.parseInt(configIniFile.read("CONFIG", "boardPngTypeB"));
-			cpuPlaySpeed = Integer.parseInt(configIniFile.read("CONFIG", "cpuPlaySpeed"));
-			soundEnabled = Boolean.parseBoolean(configIniFile.read("CONFIG", "soundEnabled"));
-			chessPlayMode = ChessPlayMode.valueOf(configIniFile.read("CONFIG", "chessPlayMode"));
-			cpuColor = PieceColor.valueOf(configIniFile.read("CONFIG", "cpuColor"));
-			menuCheckItemHoverBlink.setSelected(configIniFile.read("CONFIG", "hoverPieceMode").equals("1"));
-			menuCheckItemHoverLift.setSelected(configIniFile.read("CONFIG", "hoverPieceMode").equals("2"));
-			menuCheckItemTransparent.setSelected(configIniFile.read("CONFIG", "hoverPieceMode").equals("3"));
-			menuCheckItemLinearFilteringOff.setSelected(configIniFile.read("CONFIG", "linearFiltering").equals("0"));
-			menuCheckItemLinearFilteringX1.setSelected(configIniFile.read("CONFIG", "linearFiltering").equals("1"));
-			menuCheckItemLinearFilteringX2.setSelected(configIniFile.read("CONFIG", "linearFiltering").equals("2"));
-			menuCheckItemLinearFilteringX3.setSelected(configIniFile.read("CONFIG", "linearFiltering").equals("3"));
-			menuCheckItemSwapBoard.setSelected(Boolean.parseBoolean(configIniFile.read("CONFIG", "swapColors")));
-		}
-		catch (Exception e) {
-			loadedBoardName = CHESS_DEFAULT;
-			movePieceDelay = 20;
-			piecePngType = 0;
-			boardPngTypeA = 0;
-			boardPngTypeB = 0;
-			cpuPlaySpeed = 1000;
-			soundEnabled = true;
-			chessPlayMode = ChessPlayMode.PLAYER_VS_PLAYER;
-			cpuColor = PieceColor.BLACK;
-			menuCheckItemHoverBlink.setSelected(true);
-			menuCheckItemLinearFilteringX2.setSelected(true);
-			if (tryCatchOnConsole) {
-				System.err.println("Error on catch 009");
-				e.printStackTrace();
-			}
-		}
+		loadedBoardName = configIniFile.read("CONFIG", "loadedBoardName") != null &&
+				configIniFile.getLastReadVal().equals("null") ?
+				configIniFile.getLastReadVal() : DEFAULT_BOARD_NAME;
+		reloadBoard(loadedBoardName);
+		movePieceDelay = configIniFile.read("CONFIG", "movePieceDelay") != null ?
+				Integer.parseInt(configIniFile.getLastReadVal()) : 20;
+		piecePngType = configIniFile.read("CONFIG", "piecePngType") != null ?
+				Integer.parseInt(configIniFile.getLastReadVal()) : 0;
+		boardPngTypeA = configIniFile.read("CONFIG", "boardPngTypeA") != null ?
+				Integer.parseInt(configIniFile.getLastReadVal()) : 0;
+		boardPngTypeB = configIniFile.read("CONFIG", "boardPngTypeB") != null ?
+				Integer.parseInt(configIniFile.getLastReadVal()) : 0;
+		cpuPlaySpeed = configIniFile.read("CONFIG", "cpuPlaySpeed") != null ?
+				Integer.parseInt(configIniFile.getLastReadVal()) : 1000;
+		soundEnabled = configIniFile.read("CONFIG", "soundEnabled") != null ?
+				Boolean.parseBoolean(configIniFile.getLastReadVal()) : true;
+		chessPlayMode = configIniFile.read("CONFIG", "chessPlayMode") != null ?
+				ChessPlayMode.valueOf(configIniFile.getLastReadVal()) : ChessPlayMode.PLAYER_VS_PLAYER;
+		cpuColor = configIniFile.read("CONFIG", "cpuColor") != null ?
+				PieceColor.valueOf(configIniFile.getLastReadVal()) : PieceColor.BLACK;
+		menuCheckItemHoverBlink.setSelected(configIniFile.read("CONFIG", "hoverPieceMode") != null ?
+				configIniFile.getLastReadVal().equals("1") : false);
+		menuCheckItemHoverLift.setSelected(configIniFile.read("CONFIG", "hoverPieceMode") != null ?
+				configIniFile.getLastReadVal().equals("2") : false);
+		menuCheckItemTransparent.setSelected(configIniFile.read("CONFIG", "hoverPieceMode") != null ?
+				configIniFile.getLastReadVal().equals("3") : false);
+		menuCheckItemLinearFilteringOff.setSelected(configIniFile.read("CONFIG", "linearFilteringOff") != null ?
+				configIniFile.getLastReadVal().equals("0") : true);
+		menuCheckItemLinearFilteringX1.setSelected(configIniFile.read("CONFIG", "linearFilteringX1") != null ?
+				configIniFile.getLastReadVal().equals("1") : false);
+		menuCheckItemLinearFilteringX2.setSelected(configIniFile.read("CONFIG", "linearFilteringX2") != null ?
+				configIniFile.getLastReadVal().equals("2") : false);
+		menuCheckItemLinearFilteringX3.setSelected(configIniFile.read("CONFIG", "linearFilteringX3") != null ?
+				configIniFile.getLastReadVal().equals("3") : false);
+		menuCheckItemSwapBoard.setSelected(configIniFile.read("CONFIG", "swapColors") != null ?
+				Boolean.parseBoolean(configIniFile.getLastReadVal()) : false);
 	}
 
 	public void saveConfigsToDisk() {
