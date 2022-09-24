@@ -58,7 +58,7 @@ import util.Sounds;
 
 public class BoardController implements Initializable {
 
-	private static Boolean tryCatchOnConsole = true;
+	private static Boolean tryCatchOnConsole = false;
 	private final static String DEFAULT_BOARD_NAME = "Chess_default";
 	private final static String DEFAULT_BOARD = "r0,n0,b0,q0,k0,b0,n0,r0!p0,p0,p0,p0,p0,p0,p0,p0!..,..,..,..,..,..,..,..!..,..,..,..,..,..,..,..!..,..,..,..,..,..,..,..!..,..,..,..,..,..,..,..!P0,P0,P0,P0,P0,P0,P0,P0!R0,N0,B0,Q0,K0,B0,N0,R0";
 	private final static String DEFAULT_CLEAR_BOARD = "..,..,..,Q0,K0,..,..,..!..,..,..,..,..,..,..,..!..,..,..,..,..,..,..,..!..,..,..,..,..,..,..,..!..,..,..,..,..,..,..,..!..,..,..,..,..,..,..,..!..,..,..,..,..,..,..,..!..,..,..,q0,k0,..,..,..";
@@ -123,6 +123,8 @@ public class BoardController implements Initializable {
   @FXML
 	private Canvas canvasMovePiece;
   @FXML
+	private Canvas canvasMsg;
+  @FXML
   private ImageView imageViewBoardFrame;
 	@FXML
 	private Canvas canvasTurn;
@@ -148,6 +150,8 @@ public class BoardController implements Initializable {
   private FlowPane flowPaneWhiteCapturedPieces;
   @FXML
   private CheckMenuItem menuCheckItemEditMode;
+  @FXML
+  private Menu menuOptions;
   @FXML
   private MenuItem menuItemCreateNewBoard;
   @FXML
@@ -476,6 +480,7 @@ public class BoardController implements Initializable {
 			}
 		});
 		menuCheckItemEditMode.setOnAction(e -> {
+			menuOptions.setDisable(menuCheckItemEditMode.isSelected());
 			for (Node node : Arrays.asList(textCapturedPieces1, textCapturedPieces2, vBoxChronometer1,
 						vBoxChronometer2, vBoxChronometer3, vBoxTurns))
 							node.setVisible(!menuCheckItemEditMode.isSelected());
@@ -529,18 +534,19 @@ public class BoardController implements Initializable {
 					if (Alerts.confirmation("Confirmation", "Remove board", "Are you sure you want to remove\nthe board \"" + item + "\"?\nIt can't be undone")) {
 						configIniFile.remove("SAVED_BOARDS", checkMenuRenameBoard.getText());
 						Alerts.information("Information", "Board successfully removed");
+						loadedBoardName = DEFAULT_BOARD_NAME;
 						setEditBoardMenu();
 					}
 				});
 				menuRenameBoard.getItems().add(checkMenuRenameBoard);
 				menuRemoveBoard.getItems().add(checkMenuRemoveBoard);
-				menuRenameBoard.setDisable(menuRenameBoard.getItems().isEmpty());
-				menuRemoveBoard.setDisable(menuRemoveBoard.getItems().isEmpty());
 			}
 		}
 		menuLoadBoard.getItems().sort((a, b) -> a.getText().replace(' ', '_').equals(DEFAULT_BOARD_NAME) ? -Integer.MAX_VALUE : a.getText().compareTo(b.getText()));
 		menuRenameBoard.getItems().sort((a, b) -> a.getText().compareTo(b.getText()));
 		menuRemoveBoard.getItems().sort((a, b) -> a.getText().compareTo(b.getText()));
+		menuRenameBoard.setDisable(menuRenameBoard.getItems().isEmpty());
+		menuRemoveBoard.setDisable(menuRemoveBoard.getItems().isEmpty());
 	}
 
 	private void updateMenuSpriteSetup() {
@@ -831,18 +837,18 @@ public class BoardController implements Initializable {
 	private void msg(String text, Color color) {
 		Text txt = new Text(text);
 		txt.setFont(Font.font("Lucida Console", 20));
-		GraphicsContext gc = canvasMovePiece.getGraphicsContext2D();
+		GraphicsContext gc = canvasMsg.getGraphicsContext2D();
 		clearCanvas(gc, 0, 0, 512, 576);
 		if (!text.isEmpty()) {
 			gc.setFill(Color.BLUE);
-			gc.fillRect(canvasMovePiece.getWidth() / 2 - txt.getLayoutBounds().getWidth() / 2 - 13, 10, txt.getLayoutBounds().getWidth() + 26, 38);
+			gc.fillRect(canvasMsg.getWidth() / 2 - txt.getLayoutBounds().getWidth() / 2 - 13, 10, txt.getLayoutBounds().getWidth() + 26, 38);
 			gc.setFill(Color.YELLOW);
-			gc.fillRect(canvasMovePiece.getWidth() / 2 - txt.getLayoutBounds().getWidth() / 2 - 10, 13, txt.getLayoutBounds().getWidth() + 20, 32);
+			gc.fillRect(canvasMsg.getWidth() / 2 - txt.getLayoutBounds().getWidth() / 2 - 10, 13, txt.getLayoutBounds().getWidth() + 20, 32);
 		}
     gc.setFill(color);
     gc.setTextAlign(TextAlignment.CENTER);
     gc.setFont(Font.font("Lucida Console", 20));
-    gc.fillText(text, canvasMovePiece.getWidth() / 2, 35);
+    gc.fillText(text, canvasMsg.getWidth() / 2, 35);
     clearMsg = System.currentTimeMillis() + 3000;
 	}
 	
@@ -908,7 +914,7 @@ public class BoardController implements Initializable {
 	}
 	
 	private Boolean boardWasValidated() {
-		if (!cronometroGame.isPausado())
+		if (!cronometroGame.isPausado() || menuCheckItemEditMode.isSelected())
 			return true;
 		try
 			{ board.validateBoard(); }
@@ -936,7 +942,7 @@ public class BoardController implements Initializable {
 				if (!menuCheckItemEditMode.isSelected() && !TravelingPiece.havePiecesTraveling()) {
 					rectangleColor = null;
 					if (piece != null) {
-						if (board.pieceCanDoEnPassant(selectedPiece) &&
+						if (board.pieceIsSelected() &&  board.pieceCanDoEnPassant(board.getSelectedPiece()) &&
 								board.getEnPassantPawn() == piece)
 									rectangleColor = Color.ORANGERED;
 						if (boardWasValidated() && board.isChecked() && 
@@ -968,7 +974,7 @@ public class BoardController implements Initializable {
 				PieceImage pieceImage = ChessSprites.pieceImages.get(piecePngType);
 				ok = piece != null && (piece == selectedPiece && (menuCheckItemEditMode.isSelected() || piece.getColor() == board.getCurrentColorTurn()));
 				lift = menuCheckItemHoverLift.isSelected() && ok ? 8 : 0;
-				
+
 				if (piece != null && !TravelingPiece.pieceIsTraveling(piece)) {
 					int[] p = ChessSprites.getXYFromPieceInfo(piece, piecePngType);
 					if (ok && (menuCheckItemTransparent.isSelected() || 
@@ -977,12 +983,11 @@ public class BoardController implements Initializable {
 					gc.drawImage(ChessSprites.getPieceImageSet(piecePngType), p[0], p[1], pieceImage.getSourceW(), pieceImage.getSourceH(), x * 64 + 32 - pieceImage.getTargetW() / 2, y * 64 + 128 - pieceImage.getTargetH() - lift, pieceImage.getTargetW(), pieceImage.getTargetH());
 					gc.setGlobalAlpha(1);
 				}
-
-				if (menuCheckItemEditMode.isSelected() && piece != null) {
-					if (piece.isPawn() && piece.wasMoved() &&
-							(piece.getPosition().getY() == 3 || piece.getPosition().getY() == 4))
-								gc.drawImage(ChessSprites.getEnPassantIcon(), x * 64, y * 64 + 64);
-					else if (piece.wasMoved())
+				
+				if (menuCheckItemEditMode.isSelected() && piece != null && piece.wasMoved()) {
+					if (piece.isPawn() && piece.getPosition().getY() == board.getEnPassantRow(piece))
+						gc.drawImage(ChessSprites.getEnPassantIcon(), x * 64, y * 64 + 64);
+					else
 						gc.drawImage(ChessSprites.getMovedIcon(), x * 64, y * 64 + 64);
 				}
 			}
@@ -1035,9 +1040,7 @@ public class BoardController implements Initializable {
 				try {
 					Piece p = board.addNewPiece(pos, editBoardPieceType, button == 0 ? PieceColor.WHITE : PieceColor.BLACK);
 					playWav("move");
-					p.setMovedTurns(0);
-					if (pressedKeys.contains(KeyCode.CONTROL))
-						p.setMovedTurns(1);
+					p.setMovedTurns(pressedKeys.contains(KeyCode.CONTROL) ? 1 : 0);
 				}
 				catch (Exception e) {
 					playWav("error");

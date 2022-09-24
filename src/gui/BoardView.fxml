@@ -24,7 +24,7 @@
    <children>
       <MenuBar fx:id="menuBar">
         <menus>
-          <Menu mnemonicParsing="false" text="Options">
+          <Menu fx:id="menuOptions" mnemonicParsing="false" text="Options">
             <items>
                   <Menu fx:id="menuGameMode" mnemonicParsing="false" text="Game mode" />
                   <SeparatorMenuItem mnemonicParsing="false" />
@@ -358,6 +358,7 @@
                                     <Canvas fx:id="canvasBoard" height="576.0" width="512.0" />
                                     <Canvas fx:id="canvasPieces" height="576.0" width="512.0" />
                                     <Canvas fx:id="canvasMovePiece" height="576.0" width="512.0" />
+                                    <Canvas fx:id="canvasMsg" height="64.0" width="512.0" />
                                  </children>
                               </StackPane>
                               <Separator prefWidth="200.0" />
