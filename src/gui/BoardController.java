@@ -7,6 +7,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.ResourceBundle;
 import java.util.function.Consumer;
+import java.util.regex.Pattern;
 
 import application.Program;
 import board.Board;
@@ -17,9 +18,7 @@ import enums.Icons;
 import enums.PieceColor;
 import enums.PieceType;
 import gameutil.FPSHandler;
-import gameutil.GameTools;
-import gameutil.Position;
-import gui.util.Controller;
+import gui.util.ControllerUtils;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.geometry.Insets;
@@ -49,11 +48,18 @@ import javafx.scene.text.Text;
 import javafx.scene.text.TextAlignment;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
+import objmoveutils.Position;
 import piece.Piece;
+import sockets.OnlineIPGetter;
+import sockets.SockClient;
+import sockets.SockServer;
+import sockets.SocketEvents;
 import util.Alerts;
 import util.ChessSprites;
 import util.Cronometro;
 import util.IniFile;
+import util.Misc;
+import util.MyConverters;
 import util.Sounds;
 
 public class BoardController implements Initializable {
@@ -79,6 +85,8 @@ public class BoardController implements Initializable {
 	private int movePieceDelay;
 	private int linearFiltering;
 	private String loadedBoardName;
+	private SockClient sockClient;
+	private SockServer sockServer;
 
 	private Cronometro cronometroGame;
 	private Cronometro cronometroBlack;
@@ -88,11 +96,16 @@ public class BoardController implements Initializable {
 	private PieceColor cpuColor;
 	private PieceType editBoardPieceType;
 	private Position mouseHoverPos;
+	private Position onlineTargetPos;
 	private ChessPlayMode chessPlayMode;
 	private FPSHandler fpsHandler;
 	private Board board;
 	private List<KeyCode> pressedKeys;
 	private IniFile configIniFile;
+
+	private SocketEvents serverSocketEvents;
+	private SocketEvents clientSocketEvents;
+	private LastSockRead lastSockRead;
 
 	@FXML
 	private VBox vBoxMainWindow;
@@ -161,6 +174,12 @@ public class BoardController implements Initializable {
   @FXML
   private Menu menuRemoveBoard;
   @FXML
+  private Menu menuOnlineMode;
+  @FXML
+  private CheckMenuItem checkMenuItemTcpIpServer;
+  @FXML
+  private CheckMenuItem checkMenuItemTcpIpClient;
+  @FXML
   private CheckMenuItem menuCheckItemHoverBlink;
   @FXML
   private CheckMenuItem menuCheckItemHoverLift;
@@ -202,6 +221,7 @@ public class BoardController implements Initializable {
 	@Override
 	public void initialize(URL url, ResourceBundle rb) {
 		editBoardPieceType = PieceType.PAWN;
+		onlineTargetPos = null;
 		cronoTurn = null;
 		unknownError = false;
 		gameOver = true;
@@ -212,12 +232,15 @@ public class BoardController implements Initializable {
 		fpsHandler = new FPSHandler(30, 0);
 		configIniFile = IniFile.getNewIniFileInstance("./config.ini");
 		vBoxEditHelper.setVisible(false);
+		menuOnlineMode.setDisable(true);
+		lastSockRead = new LastSockRead();
+		
 		loadConfigsFromDisk();
 		ChessSprites.initialize();
 		addMenus();
 		addListeners();
-		Controller.addIconToButton(buttonUndo, Icons.ICON_MOVEMAXLEFT.getValue(), 18, 18, 20);
-		Controller.addIconToButton(buttonRedo, Icons.ICON_MOVEMAXRIGHT.getValue(), 18, 18, 20);
+		ControllerUtils.addIconToButton(buttonUndo, Icons.ICON_MOVEMAXLEFT.getValue(), 18, 18, 20);
+		ControllerUtils.addIconToButton(buttonRedo, Icons.ICON_MOVEMAXRIGHT.getValue(), 18, 18, 20);
 		imageViewBoardFrame.setImage(new Image("/sprites/boards/board frame.jpg"));
 	}
 	
@@ -267,7 +290,6 @@ public class BoardController implements Initializable {
 				if (name != null && (configIniFile.read("SAVED_BOARDS", name) ==  null || !ask ||
 						Alerts.confirmation("Overwrite", "There already have a board with this name. Overwrite it?"))) {
 							configIniFile.write("SAVED_BOARDS", loadedBoardName = name, convertCurrentBoardToString());
-							configIniFile.saveToDisk();
 							msg("Board saved", Color.GREEN);
 				}
 			}
@@ -292,6 +314,10 @@ public class BoardController implements Initializable {
 		canvasMovePiece.setOnMouseMoved(e ->
 			canvasBoardMoved((int)(e.getY() / 64), (int)(e.getX() / 64)));
 		canvasMovePiece.setOnMouseClicked(e -> {
+			if (isOnlineMatch() && board.getCurrentColorTurn() != (sockServer != null ? PieceColor.WHITE : PieceColor.BLACK)) {
+				error("It's not your turn");
+				return;
+			}
 			int button = e.getButton() == MouseButton.PRIMARY ? 0 :
 				e.getButton() == MouseButton.SECONDARY ? 1 : 2;
 	    canvasBoardClicked((int)(e.getY() / 64), (int)(e.getX() / 64), button);
@@ -448,6 +474,7 @@ public class BoardController implements Initializable {
 			menuGameMode.getItems().add(checkMenuItem);
 		}
 		updateCpuSpeedMenu();
+		updateOnlineModeMenu();
 	}
 	
 	private void setEditBoardMenu() {
@@ -472,7 +499,6 @@ public class BoardController implements Initializable {
 			while (name != null && !ok);
 			if (ok) {
 				configIniFile.write("SAVED_BOARDS", name, DEFAULT_CLEAR_BOARD );
-				configIniFile.saveToDisk();
 				loadedBoardName = name;
 				reloadBoard(loadedBoardName = name);
 				setEditBoardMenu();
@@ -525,7 +551,6 @@ public class BoardController implements Initializable {
 						String m = configIniFile.read("SAVED_BOARDS", item);
 						configIniFile.remove("SAVED_BOARDS", item);
 						configIniFile.write("SAVED_BOARDS", newName, m);
-						configIniFile.saveToDisk();
 						Alerts.information("Information", "Board successfully renamed");
 						setEditBoardMenu();
 					}
@@ -686,6 +711,7 @@ public class BoardController implements Initializable {
 
 	public void init() {
 		board = new Board();
+		setSocketEvents();
 		resumirCronometro(null);
 		resetGame();
 	  boardTimer();
@@ -737,10 +763,12 @@ public class BoardController implements Initializable {
 			cpuPlay = 0;
 			gameOver = justStarted;
 			if (!justStarted) {
+				menuOnlineMode.setDisable(chessPlayMode != ChessPlayMode.PLAYER_VS_PLAYER);
 				boardTimer();
 				cpuPlay();
 			}
 			justStarted = false;
+			closeConnections();
 			updateBoard();
 			updateStuffs();
 		}
@@ -765,6 +793,10 @@ public class BoardController implements Initializable {
 	}
 
 	private void boardTimer() {
+		if (sockClient != null) {
+			while (lastSockRead.hasNextData())
+				sockRead(lastSockRead);
+		}
 		if (clearMsg != 0 && System.currentTimeMillis() >= clearMsg) {
 			clearMsg = 0;
 			msg("");
@@ -792,40 +824,46 @@ public class BoardController implements Initializable {
 		textCronometroGame.setText(cronometroGame.getDuracaoStr().substring(0, 10));
 		textCronometroBlack.setText(cronometroBlack.getDuracaoStr().substring(0, 10));
 		textCronometroWhite.setText(cronometroWhite.getDuracaoStr().substring(0, 10));
-		if (!unknownError && !gameOver && !board.canRedoMove() && board.isCpuTurn() && cpuPlay > 0 &&
+		if (!unknownError && !gameOver && !board.canRedoMove() && 
+				(board.isCpuTurn() || isOnlineMatch()) && cpuPlay > 0 &&
 				!menuCheckItemEditMode.isSelected() && System.currentTimeMillis() >= cpuPlay) {
-			if (board.getChessAI().cpuSelectedAPiece()) {
-				cpuPlay = System.currentTimeMillis() + (long)cpuPlaySpeed;
-  			startPieceTravel(board.getChessAI().cpuSelectedTargetPosition());
-			}
-			else {
-    		if (cronoTurn == null)
-    			resumirCronometro(cronoTurn = board.getCurrentColorTurn());
-      	msg("");
-				playWav("select");
-				try {
-					board.getChessAI().doCpuSelectAPiece();
-					cpuPlay = System.currentTimeMillis() + (long)cpuPlaySpeed;
-				}
-				catch (Exception e) {
-					error(e.getMessage());
-					if (tryCatchOnConsole) {
-						System.err.println("Error on catch 002");
-						e.printStackTrace();
+					if (isOnlineMatch()) {
+						cpuPlay = 0;
+						TravelingPiece.add(board.getSelectedPiece(), onlineTargetPos, movePieceDelay);
+						onlineTargetPos = null;
 					}
-					cronometroBlack.setPausado(true);
-					cronometroWhite.setPausado(true);
-					cronometroGame.setPausado(true);
-					unknownError = true;
-				}
-			}
+					else if (board.getChessAI().cpuSelectedAPiece()) {
+						cpuPlay = System.currentTimeMillis() + (long)cpuPlaySpeed;
+		  			startPieceTravel(board.getChessAI().cpuSelectedTargetPosition());
+					}
+					else {
+		    		if (cronoTurn == null)
+		    			resumirCronometro(cronoTurn = board.getCurrentColorTurn());
+		      	msg("");
+						playWav("select");
+						try {
+							board.getChessAI().doCpuSelectAPiece();
+							cpuPlay = System.currentTimeMillis() + (long)cpuPlaySpeed;
+						}
+						catch (Exception e) {
+							error(e.getMessage());
+							if (tryCatchOnConsole) {
+								System.err.println("Error on catch 002");
+								e.printStackTrace();
+							}
+							cronometroBlack.setPausado(true);
+							cronometroWhite.setPausado(true);
+							cronometroGame.setPausado(true);
+							unknownError = true;
+						}
+					}
 		}
 		fpsHandler.fpsCounter();
 		if (Program.windowIsOpen() && (menuCheckItemEditMode.isSelected() ||
 				!gameOver || TravelingPiece.havePiecesTraveling())) {
 					if (gameOver && TravelingPiece.havePiecesTraveling())
 						TravelingPiece.runItOnEveryFrame();
-					GameTools.callMethodAgain(e -> boardTimer());
+					Misc.runLater(() -> boardTimer());
 		}
 	}
 
@@ -904,7 +942,7 @@ public class BoardController implements Initializable {
 	private void playWav(String wav) {
 		if (soundEnabled)
 			try
-				{ Sounds.playWav("./src/sounds/" + wav + ".wav"); }
+				{ Sounds.playWav("Sounds\\" + wav + ".wav"); }
 			catch (Exception e) {
 				if (tryCatchOnConsole) {
 					System.err.println("Error on catch 003");
@@ -1005,6 +1043,9 @@ public class BoardController implements Initializable {
 					}
     }
 	}
+	
+	private Boolean isOnlineMatch()
+		{ return sockServer != null || sockClient != null; }
 
 	private void canvasBoardClicked(int row, int column, int button) {
 		if (!menuCheckItemEditMode.isSelected() && !boardWasValidated())
@@ -1013,7 +1054,7 @@ public class BoardController implements Initializable {
     		!unknownError && !board.isGameOver() && !board.isCpuTurn())) {
 		    	Position position = new Position(column, row - 1);
 		    	boardClick(board.getPieceAt(position), position, button);
-    }		
+    }
 	}
 
 	private void boardMouseHover(Piece piece, Position pos) {
@@ -1100,6 +1141,12 @@ public class BoardController implements Initializable {
 		if (rook != null)
 			TravelingPiece.add(rook, rookTargetPositon, movePieceDelay);
 		TravelingPiece.add(board.getSelectedPiece(), targetPosition, movePieceDelay);
+		int y1 = (int)board.getSelectedPiece().getPosition().getY();
+		int x1 = (int)board.getSelectedPiece().getPosition().getX();
+		int y2 = (int)targetPosition.getPosition().getY();
+		int x2 = (int)targetPosition.getPosition().getX();
+		if (sockClient != null)
+			sockClient.sendData("MOVE " + y1 + " " + x1 + " " + y2 + " " + x2);
 		playWav("clicked");
 		fpsHandler.setCPS(120);
 		drawPieces();
@@ -1107,6 +1154,8 @@ public class BoardController implements Initializable {
 
 	private void movePieceTo(Position pos) {
 		Boolean wasCheckedBefore = board.isChecked();
+		if (!menuOnlineMode.isDisable())
+			menuOnlineMode.setDisable(true);
 		try {
 			if (!board.isCpuTurn())
 				board.movePieceTo(pos);
@@ -1353,7 +1402,6 @@ public class BoardController implements Initializable {
 			configIniFile.write("CONFIG", "linearFiltering", menuCheckItemLinearFilteringOff.isSelected() ? "0" :
 				menuCheckItemLinearFilteringX1.isSelected() ? "1" :
 				menuCheckItemLinearFilteringX2.isSelected() ? "2" : "3");
-			configIniFile.saveToDisk();
 		}
 		catch (Exception e) {
 			if (tryCatchOnConsole) {
@@ -1363,4 +1411,197 @@ public class BoardController implements Initializable {
 		}
 	}	
 
+	// SOCKET STUFFS
+	
+	private void closeConnections() {
+		closeClient();
+		closeServer();
+	}
+
+	private void closeClient() {
+		if (sockClient != null)
+			try
+				{ sockClient.close(); }
+			catch (Exception ex) {}
+		checkMenuItemTcpIpClient.setSelected(false);
+		menuGameMode.setDisable(false);
+		sockClient = null;
+	}
+
+	private void closeServer() {
+		if (sockServer != null)
+			try
+				{ sockServer.closeServer(); }
+			catch (Exception ex) {}
+		checkMenuItemTcpIpServer.setSelected(false);
+		menuGameMode.setDisable(false);
+		sockServer = null;
+	}
+
+	private void setSocketEvents() {
+		serverSocketEvents = new SocketEvents();
+		clientSocketEvents = new SocketEvents();
+
+		clientSocketEvents.setOnSocketOpenEvent(sock -> {
+			sock.sendData(sock.getInetAddress().toString().substring(1) + " " + MyConverters.IPToLong(sock.getInetAddress().toString().substring(1)));
+		});
+		clientSocketEvents.setOnSocketOpenErrorEvent((sock, ex) -> Alerts.exception("Error", "Unable to connect to the server", "Unable to connect to the server", ex));
+		clientSocketEvents.setOnSocketDisconnectEvent((sock, ex) -> Alerts.information("Information", "Disconnected", "The current connection was lost or closed by the otherside"));
+		clientSocketEvents.setOnSocketReadEvent((sock, data) -> lastSockRead.addSockReadData(sock, data));
+
+		serverSocketEvents.setOnSocketAcceptEvent(sock -> {
+			sockClient = sock;
+			
+		});
+		serverSocketEvents.setOnSocketListenErrorEvent((sock, ex) -> Alerts.exception("Error", "Unable to create server", "Unable to list on the port 5123", ex));
+	}
+
+	private void sockRead(LastSockRead lastSockRead) {
+		SockClient sock = lastSockRead.getSockClient();
+		String data = lastSockRead.getNextData();
+		if (sock.getMark() == null) {
+			if (!data.equals(sock.getInetAddress().toString().substring(1) + " " +
+					MyConverters.IPToLong(sock.getInetAddress().toString().substring(1))))
+						sockServer.closeClient(sock);
+			else {
+				try {
+					sock.setMark("OK");
+					if (sockServer != null) {
+						Alerts.information("Information", "New client connected", "New client connected:\nIP: " + sock.getInetAddress());
+						sockClient.sendData(sockClient.getInetAddress().toString().substring(1) + " " + MyConverters.IPToLong(sockClient.getInetAddress().toString().substring(1)));
+						sockServer.stopListening();
+					}
+					else
+						Alerts.information("Information", "Connect to the server", "Successfully connect to the server:\nIP: " + sock.getInetAddress());
+				}
+				catch (Exception e) {
+					e.printStackTrace();
+				}
+			}
+		}
+		else {
+			String[] split = data.split(" ");
+			try {
+				if (split[0].equals("MOVE")) {
+					if (split.length != 5 ||
+							(board.getCurrentColorTurn() != (sockServer == null ? PieceColor.WHITE : PieceColor.BLACK)))
+								return;
+					try {
+						int x1 = Integer.parseInt(split[2]);
+						int y1 = Integer.parseInt(split[1]);
+						int x2 = Integer.parseInt(split[4]);
+						int y2 = Integer.parseInt(split[3]);
+						board.selectPiece(new Position(x1, y1));
+		    		playWav("select");
+		    		if (cronoTurn == null)
+		    			resumirCronometro(cronoTurn = board.getCurrentColorTurn());
+						onlineTargetPos = new Position(x2, y2);
+						cpuPlay = System.currentTimeMillis() + (long)cpuPlaySpeed;
+					}
+					catch (Exception e) {}
+				}
+			}
+			catch (Exception e) {
+				System.err.println("READ ERROR: " + data);
+				e.printStackTrace();
+			}
+		}
+	}
+
+	private void updateOnlineModeMenu() {
+		checkMenuItemTcpIpServer.setOnAction(e -> {
+			if (checkMenuItemTcpIpClient.isSelected()) {
+				if (!Alerts.confirmation("Confirmation", "Create new server", "You are aready connected or trying to connect to someone... If you start to wait for a connection, the current connection will be stopped... Wanna proceed?"))
+					return;
+				closeClient();
+			}
+			else if (!checkMenuItemTcpIpServer.isSelected()) {
+				if (!Alerts.confirmation("Confirmation", "Closing server", "You are connected to someone or waiting for connections... Wanna close the server?")) {
+					checkMenuItemTcpIpServer.setSelected(true);
+					return;
+				}
+				closeServer();
+				return;
+			}
+			try {
+				String ip = OnlineIPGetter.getOnlineIP();
+				if (!Pattern.matches("\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}", ip))
+					Alerts.error("Error", "Unable to get your online IP");
+				else {
+					sockServer = new SockServer(5123, null, serverSocketEvents, clientSocketEvents);
+					if (Alerts.confirmation("Information", "Waiting for incoming connections", "Wanna set your IP on clipboard?"))
+						Misc.putTextOnClipboard(ip);
+					menuGameMode.setDisable(true);
+				}
+			}
+			catch (Exception ex) {
+				Alerts.exception("Error", "Unable to create server", "Unable to list on the port 5123", ex);
+				closeServer();
+			}
+		});
+
+		checkMenuItemTcpIpClient.setOnAction(e -> {
+			if (checkMenuItemTcpIpServer.isSelected()) {
+				if (!Alerts.confirmation("Confirmation", "Connect to server", "You are aready waiting for connections! Connecting to a server will close the waiting proccess... Wanna proceed?"))
+					return;
+				closeServer();
+			}
+			else if (!checkMenuItemTcpIpClient.isSelected()) {
+				if (!Alerts.confirmation("Confirmation", "Closing connection", "Wanna really close the current connection?")) {
+					checkMenuItemTcpIpClient.setSelected(true);
+					return;
+				}
+				closeClient();
+				return;
+			}
+			String ip = Alerts.textPrompt("Enter data", "Enter IP", "", "Enter the IP to connect");
+			if (!Pattern.matches("\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}", ip))
+				Alerts.error("Error", ip + " - Invalid IP");
+			else {
+				try {
+					sockClient = new SockClient(ip, 5123, null, clientSocketEvents);
+					menuGameMode.setDisable(true);
+				}
+				catch (Exception ex) {
+					Alerts.exception("Error", "Unable to connect to the server", "Unable to connect to the server", ex);
+					closeClient();
+				}
+			}
+		});
+	}
+
+}
+
+class LastSockRead {
+	
+	private SockClient sockClient;
+	private List<String> receivedData;
+	
+	public LastSockRead() {
+		receivedData = new ArrayList<>();
+		clear();
+	}
+	
+	public void addSockReadData(SockClient sockClient, String data) {
+		this.sockClient = sockClient;
+		receivedData.add(data);
+	}
+
+	public SockClient getSockClient()
+		{ return sockClient; }
+
+	public String getNextData() {
+		if (receivedData.isEmpty())
+			return null;
+		String m = receivedData.get(0);
+		receivedData.remove(0);
+		return m;
+	}
+	
+	public Boolean hasNextData()
+		{ return !receivedData.isEmpty(); }
+	
+	public void clear()
+		{ receivedData.clear(); }
+	
 }

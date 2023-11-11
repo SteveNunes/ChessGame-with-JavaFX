@@ -6,7 +6,7 @@ import java.util.List;
 import entities.PieceImage;
 import enums.PieceColor;
 import enums.PieceType;
-import gui.util.Controller;
+import gui.util.ImageUtils;
 import javafx.scene.SnapshotParameters;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.image.Image;
@@ -26,28 +26,28 @@ public class ChessSprites {
 	public static void initialize() {
 		if (!initialized) {
 			pieceImages = new ArrayList<>();
-			FindFile.findFile("./src/sprites/pieces/","*.png").forEach(file -> {
+			FindFile.findFile("Sprites\\pieces","*.png").forEach(file -> {
 				final int n = Integer.parseInt(file.getName().replace(".png", ""));
 				IniFile ini = IniFile.getNewIniFileInstance(file.getParent() + "\\config.ini");
 				String[] split = ini.read("CONFIG", "" + n).split(" ");
-				Image image = new Image(file.getAbsolutePath());
+				Image image = new Image("file:" + file.getAbsolutePath());
 				Color color = Color.valueOf(split[0]);
 				int toleranceThreshold = Integer.parseInt(split[1]);
 				int sourceW = Integer.parseInt(split[2]);
 				int sourceH = Integer.parseInt(split[3]);
 				int targetW = Integer.parseInt(split[4]);
 				int targetH = Integer.parseInt(split[5]);
-				image = Controller.removeBgColor(image, color, toleranceThreshold);
+				image = ImageUtils.removeBgColor(image, color, toleranceThreshold);
 				while (pieceImages.size() < n)
 					pieceImages.add(new PieceImage());
 				pieceImages.set(n - 1, new PieceImage(image, color, toleranceThreshold, sourceW, sourceH, targetW, targetH, file.getAbsolutePath()));
 			});
 			boardTilesImages = new ArrayList<>();
-			FindFile.findFile("./src/sprites/boards/","*.png").forEach(file ->
-				boardTilesImages.add(new Image(file.getAbsolutePath())));
+			FindFile.findFile("Sprites\\boards","*.png").forEach(file ->
+				boardTilesImages.add(new Image("file:" + file.getAbsolutePath())));
 			initialized = true;
-			moved = Controller.removeBgColor(new Image("/sprites/moved.png"), Color.WHITE, 10);
-			enPassant = new Image("/sprites/enpassant.png");
+			moved = ImageUtils.removeBgColor(new Image("file:Sprites\\moved.png"), Color.WHITE, 10);
+			enPassant = new Image("file:Sprites\\enpassant.png");
 		}
 	}
 	

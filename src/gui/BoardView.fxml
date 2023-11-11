@@ -81,6 +81,12 @@
                   <Menu fx:id="menuRemoveBoard" mnemonicParsing="false" text="Remove board" />
                </items>
             </Menu>
+            <Menu fx:id="menuOnlineMode" mnemonicParsing="false" text="Online mode">
+               <items>
+                  <CheckMenuItem fx:id="checkMenuItemTcpIpServer" mnemonicParsing="false" text="Wait for connection" />
+                  <CheckMenuItem fx:id="checkMenuItemTcpIpClient" mnemonicParsing="false" text="Connect" />
+               </items>
+            </Menu>
         </menus>
       </MenuBar>
       <VBox VBox.vgrow="ALWAYS">

@@ -6,7 +6,7 @@ import board.Board;
 import enums.ChessPlayMode;
 import enums.PieceColor;
 import enums.PieceType;
-import gameutil.Position;
+import objmoveutils.Position;
 import piece.Piece;
 
 public class BoardTest {

@@ -5,7 +5,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import gameutil.Position;
+import objmoveutils.Position;
 import piece.Piece;
 
 public class TravelingPiece {
