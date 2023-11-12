@@ -54,7 +54,7 @@ import sockets.OnlineIPGetter;
 import sockets.SockClient;
 import sockets.SockServer;
 import sockets.SocketEvents;
-import util.Alerts;
+import gui.util.Alerts;
 import util.ChessSprites;
 import util.Cronometro;
 import util.IniFile;
@@ -239,9 +239,9 @@ public class BoardController implements Initializable {
 		ChessSprites.initialize();
 		addMenus();
 		addListeners();
-		ControllerUtils.addIconToButton(buttonUndo, Icons.ICON_MOVEMAXLEFT.getValue(), 18, 18, 20);
-		ControllerUtils.addIconToButton(buttonRedo, Icons.ICON_MOVEMAXRIGHT.getValue(), 18, 18, 20);
-		imageViewBoardFrame.setImage(new Image("/sprites/boards/board frame.jpg"));
+		ControllerUtils.addIconToButton(buttonUndo, Icons.MOVE_MAX_LEFT.getValue(), 18, 18, 20);
+		ControllerUtils.addIconToButton(buttonRedo, Icons.MOVE_MAX_RIGHT.getValue(), 18, 18, 20);
+		imageViewBoardFrame.setImage(new Image("file:Sprites/boards/board frame.jpg"));
 	}
 	
 	private void setLinearFiltering() {
