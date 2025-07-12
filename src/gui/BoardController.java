@@ -17,8 +17,10 @@ import enums.ChessPlayMode;
 import enums.Icons;
 import enums.PieceColor;
 import enums.PieceType;
-import gameutil.FPSHandler;
+import gameutil.GameUtils;
+import gui.util.Alerts;
 import gui.util.ControllerUtils;
+import javafx.animation.AnimationTimer;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.geometry.Insets;
@@ -51,10 +53,8 @@ import javafx.stage.Stage;
 import objmoveutils.Position;
 import piece.Piece;
 import sockets.OnlineIPGetter;
-import sockets.SockClient;
-import sockets.SockServer;
-import sockets.SocketEvents;
-import gui.util.Alerts;
+import sockets.SocketClient;
+import sockets.SocketServer;
 import util.ChessSprites;
 import util.Cronometro;
 import util.IniFile;
@@ -63,49 +63,6 @@ import util.MyConverters;
 import util.Sounds;
 
 public class BoardController implements Initializable {
-
-	private static Boolean tryCatchOnConsole = false;
-	private final static String DEFAULT_BOARD_NAME = "Chess_default";
-	private final static String DEFAULT_BOARD = "r0,n0,b0,q0,k0,b0,n0,r0!p0,p0,p0,p0,p0,p0,p0,p0!..,..,..,..,..,..,..,..!..,..,..,..,..,..,..,..!..,..,..,..,..,..,..,..!..,..,..,..,..,..,..,..!P0,P0,P0,P0,P0,P0,P0,P0!R0,N0,B0,Q0,K0,B0,N0,R0";
-	private final static String DEFAULT_CLEAR_BOARD = "..,..,..,Q0,K0,..,..,..!..,..,..,..,..,..,..,..!..,..,..,..,..,..,..,..!..,..,..,..,..,..,..,..!..,..,..,..,..,..,..,..!..,..,..,..,..,..,..,..!..,..,..,..,..,..,..,..!..,..,..,q0,k0,..,..,..";
-
-	private Boolean unknownError;
-	private Boolean soundEnabled;
-	private Boolean gameOver;
-	private Boolean disabledControlsWhileIsCpuTurn;
-	private Boolean justStarted;
-	private long cpuPlay;
-	private long clearMsg;
-	private int cpuPlaySpeed;
-	private int piecePngType;
-	private int boardPngTypeA;
-	private int boardPngTypeB;
-	private int maxBoardsSprites;
-	private int maxPieceSprites;
-	private int movePieceDelay;
-	private int linearFiltering;
-	private String loadedBoardName;
-	private SockClient sockClient;
-	private SockServer sockServer;
-
-	private Cronometro cronometroGame;
-	private Cronometro cronometroBlack;
-	private Cronometro cronometroWhite;
-	private Piece hoveredPiece;
-	private PieceColor cronoTurn;
-	private PieceColor cpuColor;
-	private PieceType editBoardPieceType;
-	private Position mouseHoverPos;
-	private Position onlineTargetPos;
-	private ChessPlayMode chessPlayMode;
-	private FPSHandler fpsHandler;
-	private Board board;
-	private List<KeyCode> pressedKeys;
-	private IniFile configIniFile;
-
-	private SocketEvents serverSocketEvents;
-	private SocketEvents clientSocketEvents;
-	private LastSockRead lastSockRead;
 
 	@FXML
 	private VBox vBoxMainWindow;
@@ -218,6 +175,47 @@ public class BoardController implements Initializable {
   @FXML
   private VBox vBoxTurns;
 
+	private static Boolean tryCatchOnConsole = false;
+	private final static String DEFAULT_BOARD_NAME = "Chess_default";
+	private final static String DEFAULT_BOARD = "r0,n0,b0,q0,k0,b0,n0,r0!p0,p0,p0,p0,p0,p0,p0,p0!..,..,..,..,..,..,..,..!..,..,..,..,..,..,..,..!..,..,..,..,..,..,..,..!..,..,..,..,..,..,..,..!P0,P0,P0,P0,P0,P0,P0,P0!R0,N0,B0,Q0,K0,B0,N0,R0";
+	private final static String DEFAULT_CLEAR_BOARD = "..,..,..,Q0,K0,..,..,..!..,..,..,..,..,..,..,..!..,..,..,..,..,..,..,..!..,..,..,..,..,..,..,..!..,..,..,..,..,..,..,..!..,..,..,..,..,..,..,..!..,..,..,..,..,..,..,..!..,..,..,q0,k0,..,..,..";
+
+	private Boolean unknownError;
+	private Boolean soundEnabled;
+	private Boolean gameOver;
+	private Boolean disabledControlsWhileIsCpuTurn;
+	private Boolean justStarted;
+	private long cpuPlay;
+	private long clearMsg;
+	private int cpuPlaySpeed;
+	private int piecePngType;
+	private int boardPngTypeA;
+	private int boardPngTypeB;
+	private int maxBoardsSprites;
+	private int maxPieceSprites;
+	private int movePieceDelay;
+	private int linearFiltering;
+	private String loadedBoardName;
+	private SocketClient sockClient;
+	private SocketServer sockServer;
+
+	private Cronometro cronometroGame;
+	private Cronometro cronometroBlack;
+	private Cronometro cronometroWhite;
+	private Piece hoveredPiece;
+	private PieceColor cronoTurn;
+	private PieceColor cpuColor;
+	private PieceType editBoardPieceType;
+	private Position mouseHoverPos;
+	private Position onlineTargetPos;
+	private ChessPlayMode chessPlayMode;
+	private Board board;
+	private List<KeyCode> pressedKeys;
+	private IniFile configIniFile;
+	private AnimationTimer animationTimer;
+
+	private LastSockRead lastSockRead;
+
 	@Override
 	public void initialize(URL url, ResourceBundle rb) {
 		editBoardPieceType = PieceType.PAWN;
@@ -229,7 +227,6 @@ public class BoardController implements Initializable {
 		pressedKeys = new ArrayList<>();
 		mouseHoverPos = new Position(0, 0);
 		clearMsg = 0;
-		fpsHandler = new FPSHandler(30, 0);
 		configIniFile = IniFile.getNewIniFileInstance("./config.ini");
 		vBoxEditHelper.setVisible(false);
 		menuOnlineMode.setDisable(true);
@@ -239,8 +236,8 @@ public class BoardController implements Initializable {
 		ChessSprites.initialize();
 		addMenus();
 		addListeners();
-		ControllerUtils.addIconToButton(buttonUndo, Icons.MOVE_MAX_LEFT.getValue(), 18, 18, 20);
-		ControllerUtils.addIconToButton(buttonRedo, Icons.MOVE_MAX_RIGHT.getValue(), 18, 18, 20);
+		ControllerUtils.addIconToButton(buttonUndo, Icons.MOVE_MAX_LEFT.getValue(), 18, 18);
+		ControllerUtils.addIconToButton(buttonRedo, Icons.MOVE_MAX_RIGHT.getValue(), 18, 18);
 		imageViewBoardFrame.setImage(new Image("file:Sprites/boards/board frame.jpg"));
 	}
 	
@@ -306,7 +303,7 @@ public class BoardController implements Initializable {
 				resetGame();
 			else if (!wasGameOver) {
 				gameOver = false;
-				boardTimer();
+				mainLoop();
 			}
 		});
 		vBoxMainWindow.setOnKeyPressed(e -> keyHandler(e));
@@ -513,7 +510,7 @@ public class BoardController implements Initializable {
 			vBoxEditHelper.setVisible(menuCheckItemEditMode.isSelected());
 			buttonResetGame.setText(menuCheckItemEditMode.isSelected() ? "Save board" : "Reset game");
 			if (menuCheckItemEditMode.isSelected())
-				boardTimer();
+				mainLoop();
 			buttonResetGame.setVisible(!menuCheckItemEditMode.isSelected());
 		});
 		for (int n = -1; n < configIniFile.getItemList("SAVED_BOARDS").size(); n++) {
@@ -711,10 +708,9 @@ public class BoardController implements Initializable {
 
 	public void init() {
 		board = new Board();
-		setSocketEvents();
 		resumirCronometro(null);
 		resetGame();
-	  boardTimer();
+		mainLoop();
 		setLinearFiltering();
 	}
 	
@@ -764,7 +760,7 @@ public class BoardController implements Initializable {
 			gameOver = justStarted;
 			if (!justStarted) {
 				menuOnlineMode.setDisable(chessPlayMode != ChessPlayMode.PLAYER_VS_PLAYER);
-				boardTimer();
+				mainLoop();
 				cpuPlay();
 			}
 			justStarted = false;
@@ -792,79 +788,79 @@ public class BoardController implements Initializable {
 			cpuPlay = System.currentTimeMillis() + (long)cpuPlaySpeed * (board.isChecked() ? 2 : 1);
 	}
 
-	private void boardTimer() {
-		if (sockClient != null) {
-			while (lastSockRead.hasNextData())
-				sockRead(lastSockRead);
-		}
-		if (clearMsg != 0 && System.currentTimeMillis() >= clearMsg) {
-			clearMsg = 0;
-			msg("");
-		}
-		if (TravelingPiece.havePiecesTraveling())
-			clearCanvas(canvasMovePiece, 0, 0, 512, 576);
-		else
-			drawPieces();
-		TravelingPiece.runItOnEveryFrame();
-		for (TravelingPiece travelingPiece : TravelingPiece.getTravelingPieces())
-			if (!travelingPiece.isActive()) {
-				if (travelingPiece.getPiece() == board.getSelectedPiece())
-					movePieceTo(travelingPiece.getTargetPosition());
+	private void mainLoop() {
+		animationTimer = GameUtils.createAnimationTimer(60, (load, fps) -> { return false; }, () -> {
+			if (sockClient != null) {
+				while (lastSockRead.hasNextData())
+					sockRead(lastSockRead);
 			}
-			else {
-				PieceImage pieceImage = ChessSprites.pieceImages.get(piecePngType);
-				int[] p = ChessSprites.getXYFromPieceInfo(travelingPiece.getPiece(), piecePngType);
-				canvasMovePiece.getGraphicsContext2D().drawImage(ChessSprites.getPieceImageSet(piecePngType), p[0], p[1], pieceImage.getSourceW(), pieceImage.getSourceH(), travelingPiece.getSourceX() + 32 - pieceImage.getTargetW() / 2, travelingPiece.getSourceY() + 128 - pieceImage.getTargetH(), pieceImage.getTargetW(), pieceImage.getTargetH());
+			if (clearMsg != 0 && System.currentTimeMillis() >= clearMsg) {
+				clearMsg = 0;
+				msg("");
 			}
-		if (!TravelingPiece.havePiecesTraveling()) {
-			clearCanvas(canvasMovePiece, 0, 0, 512, 576);
-			fpsHandler.setCPS(30);
-		  checkIfPieceIsPromoted();
-		}
-		textCronometroGame.setText(cronometroGame.getDuracaoStr().substring(0, 10));
-		textCronometroBlack.setText(cronometroBlack.getDuracaoStr().substring(0, 10));
-		textCronometroWhite.setText(cronometroWhite.getDuracaoStr().substring(0, 10));
-		if (!unknownError && !gameOver && !board.canRedoMove() && 
-				(board.isCpuTurn() || isOnlineMatch()) && cpuPlay > 0 &&
-				!menuCheckItemEditMode.isSelected() && System.currentTimeMillis() >= cpuPlay) {
-					if (isOnlineMatch()) {
-						cpuPlay = 0;
-						TravelingPiece.add(board.getSelectedPiece(), onlineTargetPos, movePieceDelay);
-						onlineTargetPos = null;
-					}
-					else if (board.getChessAI().cpuSelectedAPiece()) {
-						cpuPlay = System.currentTimeMillis() + (long)cpuPlaySpeed;
-		  			startPieceTravel(board.getChessAI().cpuSelectedTargetPosition());
-					}
-					else {
-		    		if (cronoTurn == null)
-		    			resumirCronometro(cronoTurn = board.getCurrentColorTurn());
-		      	msg("");
-						playWav("select");
-						try {
-							board.getChessAI().doCpuSelectAPiece();
+			if (TravelingPiece.havePiecesTraveling())
+				clearCanvas(canvasMovePiece, 0, 0, 512, 576);
+			else
+				drawPieces();
+			TravelingPiece.runItOnEveryFrame();
+			for (TravelingPiece travelingPiece : TravelingPiece.getTravelingPieces())
+				if (!travelingPiece.isActive()) {
+					if (travelingPiece.getPiece() == board.getSelectedPiece())
+						movePieceTo(travelingPiece.getTargetPosition());
+				}
+				else {
+					PieceImage pieceImage = ChessSprites.pieceImages.get(piecePngType);
+					int[] p = ChessSprites.getXYFromPieceInfo(travelingPiece.getPiece(), piecePngType);
+					canvasMovePiece.getGraphicsContext2D().drawImage(ChessSprites.getPieceImageSet(piecePngType), p[0], p[1], pieceImage.getSourceW(), pieceImage.getSourceH(), travelingPiece.getSourceX() + 32 - pieceImage.getTargetW() / 2, travelingPiece.getSourceY() + 128 - pieceImage.getTargetH(), pieceImage.getTargetW(), pieceImage.getTargetH());
+				}
+			if (!TravelingPiece.havePiecesTraveling()) {
+				clearCanvas(canvasMovePiece, 0, 0, 512, 576);
+			  checkIfPieceIsPromoted();
+			}
+			textCronometroGame.setText(cronometroGame.getDuracaoStr().substring(0, 10));
+			textCronometroBlack.setText(cronometroBlack.getDuracaoStr().substring(0, 10));
+			textCronometroWhite.setText(cronometroWhite.getDuracaoStr().substring(0, 10));
+			if (!unknownError && !gameOver && !board.canRedoMove() && 
+					(board.isCpuTurn() || isOnlineMatch()) && cpuPlay > 0 &&
+					!menuCheckItemEditMode.isSelected() && System.currentTimeMillis() >= cpuPlay) {
+						if (isOnlineMatch()) {
+							cpuPlay = 0;
+							TravelingPiece.add(board.getSelectedPiece(), onlineTargetPos, movePieceDelay);
+							onlineTargetPos = null;
+						}
+						else if (board.getChessAI().cpuSelectedAPiece()) {
 							cpuPlay = System.currentTimeMillis() + (long)cpuPlaySpeed;
+			  			startPieceTravel(board.getChessAI().cpuSelectedTargetPosition());
 						}
-						catch (Exception e) {
-							error(e.getMessage());
-							if (tryCatchOnConsole) {
-								System.err.println("Error on catch 002");
-								e.printStackTrace();
+						else {
+			    		if (cronoTurn == null)
+			    			resumirCronometro(cronoTurn = board.getCurrentColorTurn());
+			      	msg("");
+							playWav("select");
+							try {
+								board.getChessAI().doCpuSelectAPiece();
+								cpuPlay = System.currentTimeMillis() + (long)cpuPlaySpeed;
 							}
-							cronometroBlack.setPausado(true);
-							cronometroWhite.setPausado(true);
-							cronometroGame.setPausado(true);
-							unknownError = true;
+							catch (Exception e) {
+								error(e.getMessage());
+								if (tryCatchOnConsole) {
+									System.err.println("Error on catch 002");
+									e.printStackTrace();
+								}
+								cronometroBlack.setPausado(true);
+								cronometroWhite.setPausado(true);
+								cronometroGame.setPausado(true);
+								unknownError = true;
+							}
 						}
-					}
-		}
-		fpsHandler.fpsCounter();
-		if (Program.windowIsOpen() && (menuCheckItemEditMode.isSelected() ||
-				!gameOver || TravelingPiece.havePiecesTraveling())) {
-					if (gameOver && TravelingPiece.havePiecesTraveling())
-						TravelingPiece.runItOnEveryFrame();
-					Misc.runLater(() -> boardTimer());
-		}
+			}
+			if (Program.windowIsOpen() && (menuCheckItemEditMode.isSelected() ||
+					!gameOver || TravelingPiece.havePiecesTraveling())) {
+						if (gameOver && TravelingPiece.havePiecesTraveling())
+							TravelingPiece.runItOnEveryFrame();
+			}
+		});
+		animationTimer.start();
 	}
 
 	private void error(String text) {
@@ -965,7 +961,7 @@ public class BoardController implements Initializable {
 		GraphicsContext gc = canvasPieces.getGraphicsContext2D();
 		clearCanvas(gc, 0, 0, 512, 576);
 		Boolean ok;
-		Boolean blink = (fpsHandler.getElapsedFrames() / 2) % 2 == 0;
+		Boolean blink = Misc.blink(100);
 		Boolean justHovered = !board.isCpuTurn() && hoveredPiece != null;
 		Piece selectedPiece = justHovered ? hoveredPiece : board.getSelectedPiece();
 		Position pos = new Position();
@@ -1148,7 +1144,6 @@ public class BoardController implements Initializable {
 		if (sockClient != null)
 			sockClient.sendData("MOVE " + y1 + " " + x1 + " " + y2 + " " + x2);
 		playWav("clicked");
-		fpsHandler.setCPS(120);
 		drawPieces();
 	}
 
@@ -1241,7 +1236,7 @@ public class BoardController implements Initializable {
 			else
 				msg("Draw game", Color.RED);
 			gameOver = true;
-			boardTimer();
+			mainLoop();
 		}
 		return true;
 	}
@@ -1420,8 +1415,9 @@ public class BoardController implements Initializable {
 
 	private void closeClient() {
 		if (sockClient != null)
-			try
-				{ sockClient.close(); }
+			try {
+				sockClient.disconnect();
+			}
 			catch (Exception ex) {}
 		checkMenuItemTcpIpClient.setSelected(false);
 		menuGameMode.setDisable(false);
@@ -1430,49 +1426,43 @@ public class BoardController implements Initializable {
 
 	private void closeServer() {
 		if (sockServer != null)
-			try
-				{ sockServer.closeServer(); }
+			try {
+				sockServer.close();
+			}
 			catch (Exception ex) {}
 		checkMenuItemTcpIpServer.setSelected(false);
 		menuGameMode.setDisable(false);
 		sockServer = null;
 	}
 
-	private void setSocketEvents() {
-		serverSocketEvents = new SocketEvents();
-		clientSocketEvents = new SocketEvents();
-
-		clientSocketEvents.setOnSocketOpenEvent(sock -> {
-			sock.sendData(sock.getInetAddress().toString().substring(1) + " " + MyConverters.IPToLong(sock.getInetAddress().toString().substring(1)));
+	private void setSocketServerEvents() {
+		sockClient.setOnConnectEvent(sock -> {
+			String ip = sock.getSocket().getInetAddress().toString().substring(1);
+			sock.sendData(ip + " " + MyConverters.IPToLong(ip));
 		});
-		clientSocketEvents.setOnSocketOpenErrorEvent((sock, ex) -> Alerts.exception("Error", "Unable to connect to the server", "Unable to connect to the server", ex));
-		clientSocketEvents.setOnSocketDisconnectEvent((sock, ex) -> Alerts.information("Information", "Disconnected", "The current connection was lost or closed by the otherside"));
-		clientSocketEvents.setOnSocketReadEvent((sock, data) -> lastSockRead.addSockReadData(sock, data));
-
-		serverSocketEvents.setOnSocketAcceptEvent(sock -> {
-			sockClient = sock;
-			
-		});
-		serverSocketEvents.setOnSocketListenErrorEvent((sock, ex) -> Alerts.exception("Error", "Unable to create server", "Unable to list on the port 5123", ex));
+		sockClient.setOnConnectErrorEvent(sock -> Alerts.error("Error", "Unable to connect to the server", "Unable to connect to the server"));
+		sockClient.setOnDisconnectEvent(sock -> Alerts.information("Information", "Disconnected", "The current connection was lost or closed by the otherside"));
+		sockClient.setOnDataReceiveEvent(data -> lastSockRead.addSockReadData(sockClient, data));
 	}
 
 	private void sockRead(LastSockRead lastSockRead) {
-		SockClient sock = lastSockRead.getSockClient();
+		SocketClient sock = lastSockRead.getSockClient();
 		String data = lastSockRead.getNextData();
 		if (sock.getMark() == null) {
-			if (!data.equals(sock.getInetAddress().toString().substring(1) + " " +
-					MyConverters.IPToLong(sock.getInetAddress().toString().substring(1))))
-						sockServer.closeClient(sock);
+			String ip = sock.getSocket().getInetAddress().toString().substring(1);
+			if (!data.equals(ip + " " + MyConverters.IPToLong(ip)))
+				sock.disconnect();
 			else {
 				try {
 					sock.setMark("OK");
 					if (sockServer != null) {
-						Alerts.information("Information", "New client connected", "New client connected:\nIP: " + sock.getInetAddress());
-						sockClient.sendData(sockClient.getInetAddress().toString().substring(1) + " " + MyConverters.IPToLong(sockClient.getInetAddress().toString().substring(1)));
-						sockServer.stopListening();
+						ip = sockClient.getSocket().getInetAddress().toString().substring(1);
+						Alerts.information("Information", "New client connected", "New client connected:\nIP: " + sock.getSocket().getInetAddress());
+						sockClient.sendData(ip + " " + MyConverters.IPToLong(ip));
+						sockServer.close();
 					}
 					else
-						Alerts.information("Information", "Connect to the server", "Successfully connect to the server:\nIP: " + sock.getInetAddress());
+						Alerts.information("Information", "Connect to the server", "Successfully connect to the server:\nIP: " + sock.getSocket().getInetAddress());
 				}
 				catch (Exception e) {
 					e.printStackTrace();
@@ -1528,7 +1518,12 @@ public class BoardController implements Initializable {
 				if (!Pattern.matches("\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}", ip))
 					Alerts.error("Error", "Unable to get your online IP");
 				else {
-					sockServer = new SockServer(5123, null, serverSocketEvents, clientSocketEvents);
+					sockServer = new SocketServer(5123);
+					sockServer.setOnClientConnected(sock -> {
+						sockClient = sock;
+						setSocketServerEvents();
+					});
+					sockServer.setOnStartErrorServer((sock, ex) -> Alerts.exception("Error", "Unable to create server", "Unable to list on the port 5123", ex));
 					if (Alerts.confirmation("Information", "Waiting for incoming connections", "Wanna set your IP on clipboard?"))
 						Misc.putTextOnClipboard(ip);
 					menuGameMode.setDisable(true);
@@ -1559,7 +1554,9 @@ public class BoardController implements Initializable {
 				Alerts.error("Error", ip + " - Invalid IP");
 			else {
 				try {
-					sockClient = new SockClient(ip, 5123, null, clientSocketEvents);
+					sockClient = new SocketClient();
+					sockClient.connect(ip, 5123);
+					setSocketServerEvents();
 					menuGameMode.setDisable(true);
 				}
 				catch (Exception ex) {
@@ -1574,7 +1571,7 @@ public class BoardController implements Initializable {
 
 class LastSockRead {
 	
-	private SockClient sockClient;
+	private SocketClient sockClient;
 	private List<String> receivedData;
 	
 	public LastSockRead() {
@@ -1582,12 +1579,12 @@ class LastSockRead {
 		clear();
 	}
 	
-	public void addSockReadData(SockClient sockClient, String data) {
+	public void addSockReadData(SocketClient sockClient, String data) {
 		this.sockClient = sockClient;
 		receivedData.add(data);
 	}
 
-	public SockClient getSockClient()
+	public SocketClient getSockClient()
 		{ return sockClient; }
 
 	public String getNextData() {

@@ -58,7 +58,7 @@ public class Program extends Application {
 			stage.setResizable(false);
 			stage.setTitle("Chess Game");
 			stage.setOnCloseRequest(e -> windowIsOpen = false);
-;			boardController = loader.getController();
+			boardController = loader.getController();
 			stage.show();
 			windowIsOpen = true;
 			boardController.init();
